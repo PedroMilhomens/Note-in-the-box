@@ -11,12 +11,19 @@ const bodyInput = document.querySelector("#note-body");
 const preview = document.querySelector("#note-preview");
 const newNoteButton = document.querySelector("#new-note");
 const deleteNoteButton = document.querySelector("#delete-note");
+const referenceButton = document.querySelector("#reference-note");
+const referencesList = document.querySelector("#references-list");
+const referenceDialog = document.querySelector("#reference-dialog");
+const referenceSelect = document.querySelector("#reference-select");
+const insertReferenceButton = document.querySelector("#insert-reference");
+const noteGraph = document.querySelector("#note-graph");
 
 let currentUser = null;
 let classes = [];
 let currentClass = null;
 let currentNote = null;
 let canEdit = false;
+let referenceCandidates = [];
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
@@ -55,15 +62,32 @@ function setEditable(editable) {
   document.querySelector("#save-note").disabled = !editable;
   deleteNoteButton.hidden = !editable || !currentNote;
   newNoteButton.disabled = !editable;
+  referenceButton.disabled = !editable || !currentNote;
 }
 
 function clearEditor() {
   currentNote = null;
   noteForm.reset();
   updatePreview();
+  referencesList.replaceChildren();
+  clearGraph();
   deleteNoteButton.hidden = true;
   setEditable(Boolean(currentClass?.ownBranchId)
     && branchSelect.value === currentClass.ownBranchId);
+}
+
+function clearGraph() {
+  noteGraph.replaceChildren();
+  const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+  title.id = "graph-title";
+  title.textContent = "Conexões da nota selecionada";
+  const description = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "desc",
+  );
+  description.id = "graph-description";
+  description.textContent = "Mapa de referências da classe.";
+  noteGraph.append(title, description);
 }
 
 function updateAddress() {
@@ -83,6 +107,10 @@ function makeButton(label, className, onClick) {
   return button;
 }
 
+function selectNote(noteId) {
+  void openNote(noteId).catch((error) => showFeedback(error.message, true));
+}
+
 async function loadBranchNotes() {
   const branchId = branchSelect.value;
   notesList.replaceChildren();
@@ -96,7 +124,7 @@ async function loadBranchNotes() {
     item.append(makeButton(
       `${note.title}${date}`,
       "note-button",
-      () => openNote(note.id),
+      () => selectNote(note.id),
     ));
     notesList.append(item);
   }
@@ -118,7 +146,7 @@ async function loadMissedLessons() {
       item.append(makeButton(
         `${suggestion.title} — ${suggestion.ownerName}`,
         "suggestion-button",
-        () => openNote(suggestion.noteId),
+        () => selectNote(suggestion.noteId),
       ));
     }
     missedList.append(item);
@@ -139,7 +167,156 @@ async function openNote(noteId) {
   bodyInput.value = currentNote.body;
   updatePreview();
   setEditable(currentNote.ownerId === currentUser.id);
+  const [references, graph] = await Promise.all([
+    request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/references?limit=100`,
+    ),
+    request(
+      `/api/classes/${currentClass.id}/graph?noteId=${currentNote.id}&limit=20`,
+    ),
+  ]);
+  renderReferences(references.references);
+  renderGraph(graph);
   showFeedback(`Nota de ${currentNote.ownerName}.`);
+}
+
+function renderReferences(references) {
+  referencesList.replaceChildren();
+  for (const reference of references) {
+    const item = document.createElement("li");
+    item.append(makeButton(
+      `${reference.title} — ${reference.ownerName}`,
+      "note-button",
+      () => selectNote(reference.noteId),
+    ));
+    referencesList.append(item);
+  }
+}
+
+function renderGraph(graph) {
+  clearGraph();
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const positions = new Map();
+  const neighbors = graph.nodes.filter((node) => !node.isRoot);
+  const center = { x: 400, y: 250 };
+  positions.set(graph.rootNoteId, center);
+  neighbors.forEach((node, index) => {
+    const angle = (2 * Math.PI * index) / Math.max(neighbors.length, 1)
+      - Math.PI / 2;
+    positions.set(node.id, {
+      x: center.x + Math.cos(angle) * 185,
+      y: center.y + Math.sin(angle) * 185,
+    });
+  });
+
+  for (const edge of graph.edges) {
+    const from = positions.get(edge.fromNoteId);
+    const to = positions.get(edge.toNoteId);
+    if (!from || !to) continue;
+    const line = document.createElementNS(svgNamespace, "line");
+    line.setAttribute("x1", String(from.x));
+    line.setAttribute("y1", String(from.y));
+    line.setAttribute("x2", String(to.x));
+    line.setAttribute("y2", String(to.y));
+    line.setAttribute("class", "graph-edge");
+    noteGraph.append(line);
+  }
+
+  for (const node of graph.nodes) {
+    const position = positions.get(node.id);
+    if (!position) continue;
+    const group = document.createElementNS(svgNamespace, "g");
+    group.setAttribute("class", node.isRoot ? "graph-node root" : "graph-node");
+    group.setAttribute("role", "button");
+    group.setAttribute("tabindex", "0");
+    group.setAttribute("aria-label", `${node.title}, ${node.ownerName}`);
+    group.addEventListener("click", () => selectNote(node.id));
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectNote(node.id);
+      }
+    });
+
+    const circle = document.createElementNS(svgNamespace, "circle");
+    circle.setAttribute("cx", String(position.x));
+    circle.setAttribute("cy", String(position.y));
+    circle.setAttribute("r", node.isRoot ? "31" : "24");
+    const label = document.createElementNS(svgNamespace, "text");
+    label.setAttribute("x", String(position.x));
+    label.setAttribute("y", String(position.y + 43));
+    label.textContent = node.title.length > 28
+      ? `${node.title.slice(0, 25)}...`
+      : node.title;
+    const nodeTitle = document.createElementNS(svgNamespace, "title");
+    nodeTitle.textContent = `${node.title} — ${node.ownerName}`;
+    group.append(circle, label, nodeTitle);
+    noteGraph.append(group);
+  }
+}
+
+async function openReferencePicker() {
+  if (!currentNote || !canEdit) return;
+  try {
+    const result = await request(
+      `/api/classes/${currentClass.id}/reference-candidates?noteId=${currentNote.id}&limit=100`,
+    );
+    referenceCandidates = result.candidates;
+    referenceSelect.replaceChildren();
+    for (const candidate of referenceCandidates) {
+      const option = document.createElement("option");
+      option.value = candidate.id;
+      option.textContent = `${candidate.title} — ${candidate.ownerName}`;
+      referenceSelect.append(option);
+    }
+    if (result.candidates.length === 0) {
+      showFeedback("Não há notas disponíveis em outras branches.");
+      return;
+    }
+    referenceDialog.showModal();
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+}
+
+async function insertReference() {
+  const candidateId = referenceSelect.value;
+  const candidate = referenceCandidates.find(
+    (item) => item.id === candidateId,
+  );
+  if (!candidate || !currentNote || !canEdit) return;
+  try {
+    await request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/references`,
+      {
+        method: "POST",
+        body: JSON.stringify({ targetNoteId: candidateId }),
+      },
+    );
+    const marker = `[[${candidate.title}]]`;
+    bodyInput.setRangeText(
+      marker,
+      bodyInput.selectionStart,
+      bodyInput.selectionEnd,
+      "end",
+    );
+    updatePreview();
+    referenceDialog.close();
+    const [references, graph] = await Promise.all([
+      request(
+        `/api/classes/${currentClass.id}/notes/${currentNote.id}/references?limit=100`,
+      ),
+      request(
+        `/api/classes/${currentClass.id}/graph?noteId=${currentNote.id}&limit=20`,
+      ),
+    ]);
+    renderReferences(references.references);
+    renderGraph(graph);
+    bodyInput.focus();
+    showFeedback("Referência inserida. Salve a nota para registrar o texto.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
 }
 
 async function loadClass(classId, preferredBranchId) {
@@ -197,6 +374,21 @@ newNoteButton.addEventListener("click", () => {
   clearEditor();
   titleInput.focus();
   showFeedback("Nova nota.");
+});
+
+referenceButton.addEventListener("click", () => {
+  void openReferencePicker();
+});
+
+insertReferenceButton.addEventListener("click", () => {
+  void insertReference();
+});
+
+bodyInput.addEventListener("keydown", (event) => {
+  if (event.altKey && event.shiftKey && event.key.toLowerCase() === "r") {
+    event.preventDefault();
+    void openReferencePicker();
+  }
 });
 
 bodyInput.addEventListener("input", updatePreview);

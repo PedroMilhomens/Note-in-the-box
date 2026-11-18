@@ -145,7 +145,8 @@ textarea {
 }
 
 .section-heading,
-.actions {
+.actions,
+.editor-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -181,6 +182,75 @@ textarea {
   border-top: 1px solid #d5dde4;
 }
 
+.references,
+.graph-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d5dde4;
+}
+
+.graph-panel {
+  margin-bottom: 2rem;
+  border: 1px solid #d5dde4;
+}
+
+.graph-panel svg {
+  display: block;
+  width: 100%;
+  min-height: 16rem;
+  background: #f7fafb;
+}
+
+.graph-edge {
+  stroke: #8295a3;
+  stroke-width: 2;
+}
+
+.graph-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.graph-node:focus-visible circle {
+  stroke: #dd8a22;
+  stroke-width: 4;
+}
+
+.graph-node circle {
+  fill: #174c73;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.graph-node.root circle {
+  fill: #267356;
+}
+
+.graph-node text {
+  fill: #202a35;
+  font-size: 13px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+dialog {
+  width: min(34rem, calc(100% - 2rem));
+  max-height: 85vh;
+  padding: 1.25rem;
+  border: 1px solid #8795a3;
+  border-radius: 0.7rem;
+  color: inherit;
+}
+
+dialog::backdrop {
+  background: rgb(20 43 62 / 55%);
+}
+
+.reference-picker {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .note-body {
   min-height: 3rem;
   margin: 0;
@@ -206,5 +276,11 @@ textarea {
   .selection,
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .editor-tools,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

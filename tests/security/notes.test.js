@@ -144,6 +144,8 @@ test("notas respeitam sessão, associação à classe e posse da branch", async 
     "utf8",
   );
   assert.match(notesScript, /\.textContent\s*=/u);
+  assert.match(notesScript, /createElementNS/u);
+  assert.ok(notesScript.includes("[[${candidate.title}]]"));
   assert.doesNotMatch(
     notesScript,
     /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b/u,

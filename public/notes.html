@@ -59,6 +59,13 @@
           <label for="note-body">Anotação</label>
           <textarea id="note-body" name="body" rows="12"></textarea>
 
+          <div class="editor-tools">
+            <button id="reference-note" class="secondary" type="button" disabled>
+              Referenciar nota
+            </button>
+            <span>Atalho: Alt+Shift+R</span>
+          </div>
+
           <div class="actions">
             <button id="save-note" type="submit">Salvar</button>
             <button id="delete-note" class="secondary" type="button" hidden>Excluir</button>
@@ -69,8 +76,35 @@
           <h3 id="preview-title">Visualização</h3>
           <pre id="note-preview" class="note-body"></pre>
         </section>
+
+        <section class="references" aria-labelledby="references-title">
+          <h3 id="references-title">Notas referenciadas</h3>
+          <ul id="references-list" class="note-list"></ul>
+        </section>
       </section>
     </div>
+
+    <section class="panel graph-panel" aria-labelledby="graph-heading">
+      <h2 id="graph-heading">Mapa de conexões</h2>
+      <p>Selecione um nó para abrir a nota.</p>
+      <svg id="note-graph" viewBox="0 0 800 520" role="img"
+        aria-labelledby="graph-title graph-description">
+        <title id="graph-title">Conexões da nota selecionada</title>
+        <desc id="graph-description">Mapa de referências da classe.</desc>
+      </svg>
+    </section>
   </main>
+
+  <dialog id="reference-dialog" aria-labelledby="reference-dialog-title">
+    <form method="dialog" class="reference-picker">
+      <h2 id="reference-dialog-title">Referenciar nota</h2>
+      <label for="reference-select">Nota de outra branch</label>
+      <select id="reference-select" size="8"></select>
+      <div class="actions">
+        <button id="insert-reference" type="button">Inserir referência</button>
+        <button class="secondary" value="cancel">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
 </body>
 </html>

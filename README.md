@@ -79,5 +79,12 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - As rotas exigem sessão e associação à classe; um membro que tenta editar nota alheia recebe `403`. O editor em `/notes.html` renderiza conteúdo do usuário com `textContent`.
 - Listas de notas e aulas aceitam `limit` (1 a 100, padrão 20) e `offset` (0 a 1.000.000).
 
+## Rede de notas - fase 6
+
+- `GET /api/classes/:classId/notes/:noteId/references` lista referências; `POST` no mesmo caminho cria uma referência e `DELETE /api/classes/:classId/notes/:noteId/references/:targetNoteId` a remove.
+- O destino deve ser uma nota ativa de outra branch da mesma classe. Somente o dono da nota de origem pode criar ou remover referências.
+- `GET /api/classes/:classId/reference-candidates?noteId=...` lista destinos possíveis; `GET /api/classes/:classId/graph?noteId=...` devolve a nota e suas conexões diretas. Ambos respeitam a associação à classe e a paginação.
+- No editor, “Referenciar nota” ou `Alt+Shift+R` insere `[[título]]`; o mapa SVG é construído com elementos de texto, sem interpretar títulos como HTML.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

@@ -16,6 +16,7 @@ import { createPool } from "./db.js";
 import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerClassRoutes } from "./modules/classes/routes.js";
 import { registerNoteRoutes } from "./modules/notes/routes.js";
+import { registerNoteNetworkRoutes } from "./modules/notes/network-routes.js";
 
 const config = loadConfig();
 
@@ -163,6 +164,7 @@ export function createServer({
     });
     registerClassRoutes(router, { pool, rateLimiter });
     registerNoteRoutes(router, { pool, rateLimiter });
+    registerNoteNetworkRoutes(router, { pool, rateLimiter });
   }
 
   const server = http.createServer({
