@@ -14,6 +14,7 @@ import {
 } from "./middleware/csrf.js";
 import { createPool } from "./db.js";
 import { registerAuthRoutes } from "./modules/auth/routes.js";
+import { registerClassRoutes } from "./modules/classes/routes.js";
 
 const config = loadConfig();
 
@@ -159,6 +160,7 @@ export function createServer({
       privacyVersion,
       rateLimiter,
     });
+    registerClassRoutes(router, { pool, rateLimiter });
   }
 
   const server = http.createServer({

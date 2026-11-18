@@ -63,5 +63,13 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - O cadastro permanece bloqueado enquanto `LEGAL_DOCUMENTS_APPROVED=false`. Os textos em `/termos.html` e `/privacidade.html` são avisos, não documentos legais; somente habilite o cadastro após aprovação humana dos textos finais.
 - Em produção, configure `APP_ORIGIN` como a origem HTTPS pública.
 
+## Classes - fase 4
+
+- `POST /api/classes` cria uma classe, adiciona o criador como proprietário e cria sua branch. A resposta inclui o código de convite uma única vez; somente o hash do código é armazenado.
+- `POST /api/classes/join` recebe `{ "inviteCode": "..." }`, adiciona o usuário como membro e cria (ou reutiliza) sua branch.
+- `GET /api/classes` lista as classes do usuário; `GET /api/classes/:classId` retorna os detalhes somente para membros.
+- As rotas de listagem aceitam `limit` (1 a 100, padrão 20) e `offset` (0 a 1.000.000). E-mails dos membros e códigos de convite não são incluídos nas respostas.
+- Um usuário sem sessão recebe `401`; um usuário autenticado que não pertence à classe recebe `404` ao tentar ler seus detalhes.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*
