@@ -51,7 +51,7 @@ test("roteia parâmetros, ignora query e aplica cabeçalhos de segurança", asyn
     json(response, 200, params);
   });
 
-  const server = createServer({ router });
+  const server = createServer({ router, appOrigin: null });
   assert.equal(server.headersTimeout, 10_000);
   assert.equal(server.requestTimeout, 30_000);
   const baseUrl = await listen(server, context);
@@ -68,11 +68,14 @@ test("JSON acima de 1 MB retorna 413 e headers de segurança", async (context) =
   router.add("POST", "/api/echo", async (request, response) => {
     json(response, 200, await readJson(request));
   });
-  const server = createServer({ router });
+  const server = createServer({ router, appOrigin: null });
   const baseUrl = await listen(server, context);
   const response = await fetch(`${baseUrl}/api/echo`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      origin: baseUrl,
+    },
     body: JSON.stringify({ value: "x".repeat(1024 * 1024) }),
   });
 
@@ -89,11 +92,14 @@ test("JSON malformado retorna erro curto sem detalhes internos", async (context)
   router.add("POST", "/api/echo", async (_request, response, _params, { readJson }) => {
     json(response, 200, await readJson());
   });
-  const server = createServer({ router });
+  const server = createServer({ router, appOrigin: null });
   const baseUrl = await listen(server, context);
   const response = await fetch(`${baseUrl}/api/echo`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      origin: baseUrl,
+    },
     body: "{invalid",
   });
 
@@ -140,6 +146,7 @@ test("erros internos têm resposta genérica e log sem dados da requisição", a
   const baseUrl = await listen(server, context);
   const response = await fetch(`${baseUrl}/api/private?email=aluno-ficticio@example.test`, {
     method: "POST",
+    headers: { origin: baseUrl },
   });
 
   assert.equal(response.status, 500);

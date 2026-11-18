@@ -42,6 +42,7 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - Configure `DATABASE_URL` no `.env` para o PostgreSQL de desenvolvimento.
 - Configure `DATABASE_URL_TEST` somente para o banco separado usado pela integração.
 - Execute `npm run migrate` para aplicar migrations pendentes.
+- Execute `npm run migrate:test` para preparar o banco de teste; o comando rejeita alvos que não terminem em `test`.
 - Nunca execute os testes ou migrations contra desenvolvimento ou produção.
 
 ## HTTP e arquivos estáticos
@@ -51,6 +52,16 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - O leitor JSON limita o corpo a 1 MB e o tempo de leitura a 10 segundos por padrão.
 - Respostas incluem CSP e cabeçalhos de segurança; CORS permanece fechado.
 - Os logs são JSON estruturado e não incluem caminho completo, query string, cabeçalhos ou corpo.
+
+## Autenticação - fase 3
+
+- Cadastro: `POST /api/auth/register` com nome, e-mail, senha e `acceptTerms`/`acceptPrivacy` iguais a `true`.
+- Login: `POST /api/auth/login`; a sessão é entregue em cookie `HttpOnly`, `SameSite=Lax`, com `Secure` em produção.
+- Conta atual: `GET /api/me`; logout: `POST /api/auth/logout`.
+- Requisições que alteram dados devem enviar `Origin` ou `Referer` da mesma origem.
+- A configuração exige banco PostgreSQL. Os testes de integração usam exclusivamente `DATABASE_URL_TEST`, cujo nome deve identificar um banco de teste.
+- O cadastro permanece bloqueado enquanto `LEGAL_DOCUMENTS_APPROVED=false`. Os textos em `/termos.html` e `/privacidade.html` são avisos, não documentos legais; somente habilite o cadastro após aprovação humana dos textos finais.
+- Em produção, configure `APP_ORIGIN` como a origem HTTPS pública.
 
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

@@ -11,6 +11,10 @@ test("loadConfig usa valores padrão seguros", () => {
     port: 3000,
     databaseUrl: null,
     databaseUrlTest: null,
+    appOrigin: null,
+    termsVersion: "terms-v1",
+    privacyVersion: "privacy-v1",
+    legalDocumentsApproved: false,
   });
 });
 
@@ -18,5 +22,19 @@ test("loadConfig rejeita PORT inválida", () => {
   assert.throws(
     () => loadConfig({ PORT: "não-numérico" }),
     /PORT inválido/,
+  );
+});
+
+test("configuração de produção exige origem HTTPS", () => {
+  assert.throws(
+    () => loadConfig({ NODE_ENV: "production" }),
+    /APP_ORIGIN/,
+  );
+  assert.throws(
+    () => loadConfig({
+      NODE_ENV: "production",
+      APP_ORIGIN: "http://example.test",
+    }),
+    /APP_ORIGIN/,
   );
 });

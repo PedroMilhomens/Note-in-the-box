@@ -8,6 +8,12 @@ import { readJson } from "./http/body.js";
 import { HttpError } from "./http/errors.js";
 import { json } from "./http/json.js";
 import { serveStatic } from "./http/static.js";
+import {
+  assertSameOrigin,
+  isStateChangingMethod,
+} from "./middleware/csrf.js";
+import { createPool } from "./db.js";
+import { registerAuthRoutes } from "./modules/auth/routes.js";
 
 const config = loadConfig();
 
@@ -74,6 +80,8 @@ async function dispatch(request, response, {
   nodeEnv,
   bodyTimeoutMs,
   setRoute,
+  appOrigin,
+  legalDocumentsApproved,
 }) {
   applySecurityHeaders(response, nodeEnv);
 
@@ -88,6 +96,25 @@ async function dispatch(request, response, {
     }
 
     setRoute(match.route);
+    if (isStateChangingMethod(request.method)) {
+      try {
+        assertSameOrigin(request, appOrigin);
+      } catch (error) {
+        request.resume();
+        throw error;
+      }
+    }
+    if (
+      match.route === "POST /api/auth/register"
+      && !legalDocumentsApproved
+    ) {
+      request.resume();
+      throw new HttpError(
+        503,
+        "DOCUMENTOS_PENDENTES",
+        "cadastro indisponível até a validação humana dos documentos",
+      );
+    }
     await match.handler(request, response, match.params, {
       readJson: (options) => readJson(request, {
         timeoutMs: bodyTimeoutMs,
@@ -117,7 +144,23 @@ export function createServer({
   nodeEnv = process.env.NODE_ENV ?? "development",
   logger = defaultLogger,
   bodyTimeoutMs = 10_000,
+  pool = null,
+  appOrigin = config.appOrigin,
+  termsVersion = config.termsVersion,
+  privacyVersion = config.privacyVersion,
+  legalDocumentsApproved = config.legalDocumentsApproved,
+  rateLimiter,
 } = {}) {
+  if (pool) {
+    registerAuthRoutes(router, {
+      pool,
+      nodeEnv,
+      termsVersion,
+      privacyVersion,
+      rateLimiter,
+    });
+  }
+
   const server = http.createServer({
     headersTimeout: 10_000,
     requestTimeout: 30_000,
@@ -142,6 +185,8 @@ export function createServer({
       staticRoot,
       nodeEnv,
       bodyTimeoutMs,
+      appOrigin,
+      legalDocumentsApproved,
       setRoute: (matchedRoute) => {
         route = matchedRoute;
       },
@@ -149,6 +194,7 @@ export function createServer({
       route = matchedRoute;
       finish(response.statusCode);
     }).catch((error) => {
+      if (!request.complete) request.resume();
       if (response.headersSent) {
         response.destroy();
       } else {
@@ -199,7 +245,15 @@ const isMainModule = process.argv[1]
   && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMainModule) {
-  const server = createServer({ nodeEnv: config.nodeEnv });
+  const pool = createPool(config.databaseUrl);
+  const server = createServer({
+    nodeEnv: config.nodeEnv,
+    appOrigin: config.appOrigin,
+    pool,
+    termsVersion: config.termsVersion,
+    privacyVersion: config.privacyVersion,
+    legalDocumentsApproved: config.legalDocumentsApproved,
+  });
   server.listen(config.port, config.host, () => {
     process.stdout.write(`Servidor iniciado em http://${config.host}:${config.port}\n`);
   });

@@ -1,12 +1,46 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import test from "node:test";
-import { compareMigrationNames, migrate } from "../../scripts/migrate.js";
+import {
+  compareMigrationNames,
+  getMigrationDatabaseUrl,
+  migrate,
+} from "../../scripts/migrate.js";
 
 test("migrations são ordenadas pelo prefixo numérico", () => {
   assert.deepEqual(
     compareMigrationNames(["002_notas.sql", "001_init.sql", "003_foro.sql"]),
     ["001_init.sql", "002_notas.sql", "003_foro.sql"],
+  );
+});
+
+test("alvo de migration de teste exige banco separado identificado como teste", () => {
+  assert.equal(
+    getMigrationDatabaseUrl({
+      test: true,
+      env: {
+        DATABASE_URL: "postgresql://localhost/noteapp_dev",
+        DATABASE_URL_TEST: "postgresql://localhost/noteapp_test",
+      },
+    }),
+    "postgresql://localhost/noteapp_test",
+  );
+  assert.throws(
+    () => getMigrationDatabaseUrl({
+      test: true,
+      env: {
+        DATABASE_URL: "postgresql://localhost/noteapp_test",
+        DATABASE_URL_TEST: "postgresql://localhost/noteapp_test",
+      },
+    }),
+    /não pode ser o banco de desenvolvimento/,
+  );
+  assert.throws(
+    () => getMigrationDatabaseUrl({
+      test: true,
+      env: { DATABASE_URL_TEST: "postgresql://localhost/production" },
+    }),
+    /identificado como teste/,
   );
 });
 

@@ -8,6 +8,39 @@ export function compareMigrationNames(names) {
   return [...names].sort((left, right) => left.localeCompare(right, "en"));
 }
 
+export function getMigrationDatabaseUrl({ test = false, env = process.env } = {}) {
+  const databaseUrl = test ? env.DATABASE_URL_TEST : env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error(test ? "DATABASE_URL_TEST é obrigatória" : "DATABASE_URL é obrigatória");
+  }
+
+  if (!test) return databaseUrl;
+
+  const testUrl = new URL(databaseUrl);
+  const databaseName = decodeURIComponent(testUrl.pathname.slice(1));
+  if (
+    !["postgres:", "postgresql:"].includes(testUrl.protocol)
+  ) {
+    throw new Error("DATABASE_URL_TEST deve usar PostgreSQL");
+  }
+
+  if (env.DATABASE_URL) {
+    const developmentUrl = new URL(env.DATABASE_URL);
+    if (
+      developmentUrl.origin === testUrl.origin
+      && developmentUrl.pathname === testUrl.pathname
+    ) {
+      throw new Error("Banco de teste não pode ser o banco de desenvolvimento");
+    }
+  }
+
+  if (!/(?:^|[_-])test$/i.test(databaseName)) {
+    throw new Error("O destino de teste deve ser um banco identificado como teste");
+  }
+
+  return databaseUrl;
+}
+
 export async function migrate(databaseUrl, poolFactory) {
   if (!databaseUrl) {
     throw new Error("DATABASE_URL é obrigatória");
@@ -69,6 +102,7 @@ const isMainModule = process.argv[1]
   && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMainModule) {
-  await migrate(process.env.DATABASE_URL);
+  const test = process.argv.includes("--test");
+  await migrate(getMigrationDatabaseUrl({ test }));
   process.stdout.write("Migrations aplicadas\n");
 }
