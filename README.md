@@ -71,5 +71,13 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - As rotas de listagem aceitam `limit` (1 a 100, padrão 20) e `offset` (0 a 1.000.000). E-mails dos membros e códigos de convite não são incluídos nas respostas.
 - Um usuário sem sessão recebe `401`; um usuário autenticado que não pertence à classe recebe `404` ao tentar ler seus detalhes.
 
+## Notas - fase 5
+
+- `POST` e `GET /api/classes/:classId/branches/:branchId/notes` criam notas na branch própria ou listam as notas de uma branch da classe; listas omitem o corpo.
+- `GET`, `PATCH` e `DELETE /api/classes/:classId/notes/:noteId` leem, salvam e excluem notas. Todos os membros leem; somente o dono da branch pode alterar ou excluir. Cada criação e salvamento registra uma versão do corpo em `note_versions`.
+- `GET /api/classes/:classId/missed-lessons` identifica datas passadas com notas de colegas e sem nota na branch do usuário, sugerindo até cinco notas de colegas por data. A comparação usa as datas disponíveis nas próprias notas, pois ainda não há calendário de aulas.
+- As rotas exigem sessão e associação à classe; um membro que tenta editar nota alheia recebe `403`. O editor em `/notes.html` renderiza conteúdo do usuário com `textContent`.
+- Listas de notas e aulas aceitam `limit` (1 a 100, padrão 20) e `offset` (0 a 1.000.000).
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

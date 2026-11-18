@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Anotações - Note in the box</title>
+  <link rel="stylesheet" href="/css/notes.css">
+  <script type="module" src="/js/notes.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <a class="brand" href="/">Note in the box</a>
+      <h1>Anotações</h1>
+      <p>Escreva na sua branch e consulte as anotações dos membros da classe.</p>
+    </header>
+
+    <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+
+    <section class="selection panel" aria-label="Selecionar classe e branch">
+      <label for="class-select">Classe</label>
+      <select id="class-select"></select>
+      <label for="branch-select">Branch</label>
+      <select id="branch-select"></select>
+    </section>
+
+    <section id="missed-section" class="panel" aria-labelledby="missed-title">
+      <h2 id="missed-title">Aulas possivelmente perdidas</h2>
+      <p>Datas com anotações de colegas e sem nota na sua branch.</p>
+      <ul id="missed-list" class="suggestions"></ul>
+    </section>
+
+    <div class="workspace">
+      <section class="panel note-list-panel" aria-labelledby="notes-title">
+        <div class="section-heading">
+          <h2 id="notes-title">Notas</h2>
+          <button id="new-note" type="button">Nova nota</button>
+        </div>
+        <ul id="notes-list" class="note-list"></ul>
+      </section>
+
+      <section class="panel editor" aria-labelledby="editor-title">
+        <h2 id="editor-title">Editor</h2>
+        <form id="note-form">
+          <label for="note-title">Título</label>
+          <input id="note-title" name="title" maxlength="200" required>
+
+          <label for="lesson-date">Data da aula</label>
+          <input id="lesson-date" name="lessonDate" type="date">
+
+          <label for="note-status">Estado</label>
+          <select id="note-status" name="status">
+            <option value="draft">Rascunho</option>
+            <option value="complete">Completa</option>
+            <option value="incomplete">Incompleta</option>
+          </select>
+
+          <label for="note-body">Anotação</label>
+          <textarea id="note-body" name="body" rows="12"></textarea>
+
+          <div class="actions">
+            <button id="save-note" type="submit">Salvar</button>
+            <button id="delete-note" class="secondary" type="button" hidden>Excluir</button>
+          </div>
+        </form>
+
+        <section class="preview" aria-labelledby="preview-title">
+          <h3 id="preview-title">Visualização</h3>
+          <pre id="note-preview" class="note-body"></pre>
+        </section>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
