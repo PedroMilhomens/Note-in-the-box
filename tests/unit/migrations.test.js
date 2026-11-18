@@ -22,6 +22,17 @@ test("migration inicial usa UUID, pgcrypto e chaves estrangeiras", async () => {
   assert.doesNotMatch(sql, /NOT NOT REFERENCES/);
 });
 
+test("migration complementar preenche metadados sem editar o schema inicial", async () => {
+  const sql = await fs.readFile(
+    new URL("../../db/migrations/002_complete_table_metadata.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(sql, /ALTER TABLE flashcard_reviews[\s\S]+ADD COLUMN id uuid NOT NULL DEFAULT gen_random_uuid\(\)/);
+  assert.match(sql, /ALTER TABLE consents[\s\S]+ADD COLUMN id uuid NOT NULL DEFAULT gen_random_uuid\(\)/);
+  assert.match(sql, /ALTER TABLE audit_log[\s\S]+ADD COLUMN created_at timestamptz NOT NULL DEFAULT now\(\)/);
+});
+
 test("migrator registra migration e não repete migration aplicada", async () => {
   const appliedNames = new Set();
   let transactionDepth = 0;
@@ -74,5 +85,8 @@ test("migrator registra migration e não repete migration aplicada", async () =>
   assert.equal(transactionDepth, 0);
   assert.equal(releaseCount, 2);
   assert.equal(endCount, 2);
-  assert.deepEqual([...appliedNames], ["001_init.sql"]);
+  assert.deepEqual([...appliedNames], [
+    "001_init.sql",
+    "002_complete_table_metadata.sql",
+  ]);
 });

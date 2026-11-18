@@ -44,5 +44,13 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - Execute `npm run migrate` para aplicar migrations pendentes.
 - Nunca execute os testes ou migrations contra desenvolvimento ou produção.
 
+## HTTP e arquivos estáticos
+
+- O servidor publica somente arquivos dentro de `public/`.
+- Rotas de API devem ser registradas no roteador próprio em `src/server/router.js`.
+- O leitor JSON limita o corpo a 1 MB e o tempo de leitura a 10 segundos por padrão.
+- Respostas incluem CSP e cabeçalhos de segurança; CORS permanece fechado.
+- Os logs são JSON estruturado e não incluem caminho completo, query string, cabeçalhos ou corpo.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*
