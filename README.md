@@ -14,4 +14,35 @@ Dentro do aplicativo as anotações serão organizadas por classes, cada classe 
 
 Preview do site em [PREVIEW.md](PREVIEW.md).
 
+
+## Desenvolvimento - fase 0
+
+### Pré-requisitos
+
+- Node.js 22 ou mais recente
+- npm
+
+### Configuração local
+
+1. Copie `.env.example` para `.env`.
+2. Ajuste `HOST` e `PORT`, se necessário.
+3. Execute `npm install`.
+4. Execute `npm start`.
+5. Confira `http://127.0.0.1:3000/api/saude`.
+
+### Comandos
+
+- `npm start`: inicia o servidor local.
+- `npm test`: executa testes unitários, integração e smoke.
+- `npm run test:security`: executa testes de segurança.
+- `npm run verify`: executa todos os testes e auditoria de dependências.
+
+## Banco de dados
+
+- Configure `DATABASE_URL` no `.env` para o PostgreSQL de desenvolvimento.
+- Configure `DATABASE_URL_TEST` somente para o banco separado usado pela integração.
+- Execute `npm run migrate` para aplicar migrations pendentes.
+- Nunca execute os testes ou migrations contra desenvolvimento ou produção.
+
+<br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

@@ -1,1 +1,8 @@
 /PLANNING.md
+
+/AGENTS-MUST-READ/01-PLANO.toon
+/AGENTS-MUST-READ/02-REGRAS.toon
+
+.env
+node_modules/
+uploads/
