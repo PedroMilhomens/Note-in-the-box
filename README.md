@@ -86,5 +86,13 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - `GET /api/classes/:classId/reference-candidates?noteId=...` lista destinos possíveis; `GET /api/classes/:classId/graph?noteId=...` devolve a nota e suas conexões diretas. Ambos respeitam a associação à classe e a paginação.
 - No editor, “Referenciar nota” ou `Alt+Shift+R` insere `[[título]]`; o mapa SVG é construído com elementos de texto, sem interpretar títulos como HTML.
 
+## Comentários, anexos e denúncias - fase 7
+
+- Membros da classe podem consultar e comentar notas ativas. As respostas incluem autoria e data; comentários podem ser excluídos pelo próprio autor ou pelo dono da nota.
+- O dono da nota pode anexar até cinco arquivos de até 5 MB cada: PDF, PNG, JPEG ou WebP. O servidor confere a assinatura dos bytes, gera uma chave aleatória e armazena os arquivos na pasta ignorada `uploads/`, fora de `public/`.
+- Anexos são listados e baixados somente por membros autenticados da classe; downloads usam `Content-Disposition: attachment` e `nosniff`. Só o dono da nota pode enviar ou remover anexos.
+- O editor permite denunciar notas e comentários. `POST /api/classes/:classId/reports` recebe `targetType`, `targetId` e `reason`, valida se o alvo pertence à classe e aceita `note`, `comment`, `topic` ou `post`; os tipos de fórum ficam disponíveis para a fase 8.
+- Comentários, upload, download, remoção de anexos e denúncias exigem sessão e associação à classe. Denúncias e criação de conteúdo têm limite de tentativas.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

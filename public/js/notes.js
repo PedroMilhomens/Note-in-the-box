@@ -13,6 +13,14 @@ const newNoteButton = document.querySelector("#new-note");
 const deleteNoteButton = document.querySelector("#delete-note");
 const referenceButton = document.querySelector("#reference-note");
 const referencesList = document.querySelector("#references-list");
+const attachmentsList = document.querySelector("#attachments-list");
+const attachmentForm = document.querySelector("#attachment-form");
+const attachmentInput = document.querySelector("#attachment-file");
+const uploadAttachmentButton = document.querySelector("#upload-attachment");
+const commentsList = document.querySelector("#comments-list");
+const commentForm = document.querySelector("#comment-form");
+const commentBodyInput = document.querySelector("#comment-body");
+const reportNoteButton = document.querySelector("#report-note");
 const referenceDialog = document.querySelector("#reference-dialog");
 const referenceSelect = document.querySelector("#reference-select");
 const insertReferenceButton = document.querySelector("#insert-reference");
@@ -63,6 +71,10 @@ function setEditable(editable) {
   deleteNoteButton.hidden = !editable || !currentNote;
   newNoteButton.disabled = !editable;
   referenceButton.disabled = !editable || !currentNote;
+  attachmentInput.disabled = !editable || !currentNote;
+  uploadAttachmentButton.disabled = !editable || !currentNote;
+  commentBodyInput.disabled = !currentNote;
+  commentForm.querySelector("button[type=submit]").disabled = !currentNote;
 }
 
 function clearEditor() {
@@ -70,8 +82,12 @@ function clearEditor() {
   noteForm.reset();
   updatePreview();
   referencesList.replaceChildren();
+  attachmentsList.replaceChildren();
+  commentsList.replaceChildren();
+  commentForm.reset();
   clearGraph();
   deleteNoteButton.hidden = true;
+  reportNoteButton.hidden = true;
   setEditable(Boolean(currentClass?.ownBranchId)
     && branchSelect.value === currentClass.ownBranchId);
 }
@@ -177,7 +193,109 @@ async function openNote(noteId) {
   ]);
   renderReferences(references.references);
   renderGraph(graph);
+  reportNoteButton.hidden = false;
+  await loadCollaboration();
   showFeedback(`Nota de ${currentNote.ownerName}.`);
+}
+
+async function loadCollaboration() {
+  if (!currentNote || !currentClass) return;
+  const [comments, attachments] = await Promise.all([
+    request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/comments?limit=100`,
+    ),
+    request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/attachments`,
+    ),
+  ]);
+  renderComments(comments.comments);
+  renderAttachments(attachments.attachments);
+}
+
+function renderComments(comments) {
+  commentsList.replaceChildren();
+  for (const comment of comments) {
+    const item = document.createElement("li");
+    const heading = document.createElement("strong");
+    heading.textContent = `${comment.authorName} · ${new Date(comment.createdAt).toLocaleString("pt-BR")}`;
+    const body = document.createElement("p");
+    body.className = "note-body";
+    body.textContent = comment.body;
+    const actions = document.createElement("div");
+    actions.className = "comment-actions";
+    if (comment.authorId === currentUser.id || currentNote.ownerId === currentUser.id) {
+      actions.append(makeButton("Excluir comentário", "secondary", async () => {
+        try {
+          await request(
+            `/api/classes/${currentClass.id}/notes/${currentNote.id}/comments/${comment.id}`,
+            { method: "DELETE" },
+          );
+          await loadCollaboration();
+          showFeedback("Comentário excluído.");
+        } catch (error) {
+          showFeedback(error.message, true);
+        }
+      }));
+    }
+    actions.append(makeButton("Denunciar", "secondary", () => {
+      void submitReport("comment", comment.id);
+    }));
+    item.append(heading, body, actions);
+    commentsList.append(item);
+  }
+  if (comments.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "Nenhum comentário ainda.";
+    commentsList.append(empty);
+  }
+}
+
+function renderAttachments(attachments) {
+  attachmentsList.replaceChildren();
+  for (const attachment of attachments) {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = `/api/classes/${currentClass.id}/attachments/${attachment.id}/download`;
+    link.textContent = `${attachment.filename} (${Math.ceil(attachment.sizeBytes / 1024)} KB)`;
+    link.download = attachment.filename;
+    item.append(link);
+    if (currentNote.ownerId === currentUser.id) {
+      item.append(document.createTextNode(" "));
+      item.append(makeButton("Remover", "secondary", async () => {
+        try {
+          await request(
+            `/api/classes/${currentClass.id}/attachments/${attachment.id}`,
+            { method: "DELETE" },
+          );
+          await loadCollaboration();
+          showFeedback("Anexo removido.");
+        } catch (error) {
+          showFeedback(error.message, true);
+        }
+      }));
+    }
+    attachmentsList.append(item);
+  }
+  if (attachments.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "Nenhum anexo.";
+    attachmentsList.append(empty);
+  }
+}
+
+async function submitReport(targetType, targetId) {
+  if (!currentClass) return;
+  const reason = window.prompt("Descreva o motivo da denúncia:");
+  if (reason === null || !reason.trim()) return;
+  try {
+    await request(`/api/classes/${currentClass.id}/reports`, {
+      method: "POST",
+      body: JSON.stringify({ targetType, targetId, reason }),
+    });
+    showFeedback("Denúncia enviada.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
 }
 
 function renderReferences(references) {
@@ -392,6 +510,53 @@ bodyInput.addEventListener("keydown", (event) => {
 });
 
 bodyInput.addEventListener("input", updatePreview);
+
+attachmentForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = attachmentInput.files?.[0];
+  if (!file || !currentNote || !canEdit) return;
+  try {
+    await request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/attachments`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": file.type,
+          "x-file-name": encodeURIComponent(file.name),
+        },
+        body: file,
+      },
+    );
+    attachmentForm.reset();
+    await loadCollaboration();
+    showFeedback("Anexo enviado.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+});
+
+commentForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!currentNote || !currentClass) return;
+  try {
+    await request(
+      `/api/classes/${currentClass.id}/notes/${currentNote.id}/comments`,
+      {
+        method: "POST",
+        body: JSON.stringify({ body: commentBodyInput.value }),
+      },
+    );
+    commentForm.reset();
+    await loadCollaboration();
+    showFeedback("Comentário publicado.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+});
+
+reportNoteButton.addEventListener("click", () => {
+  if (currentNote) void submitReport("note", currentNote.id);
+});
 
 noteForm.addEventListener("submit", async (event) => {
   event.preventDefault();

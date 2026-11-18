@@ -81,6 +81,32 @@
           <h3 id="references-title">Notas referenciadas</h3>
           <ul id="references-list" class="note-list"></ul>
         </section>
+
+        <section class="collaboration" aria-labelledby="attachments-title">
+          <h3 id="attachments-title">Anexos</h3>
+          <form id="attachment-form" class="inline-form">
+            <label for="attachment-file">PDF, PNG, JPEG ou WebP (até 5 MB)</label>
+            <input id="attachment-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp">
+            <button id="upload-attachment" type="submit" disabled>Enviar anexo</button>
+          </form>
+          <ul id="attachments-list" class="note-list"></ul>
+        </section>
+
+        <section class="collaboration" aria-labelledby="comments-title">
+          <h3 id="comments-title">Comentários</h3>
+          <ul id="comments-list" class="note-list"></ul>
+          <form id="comment-form" class="inline-form">
+            <label for="comment-body">Adicionar comentário</label>
+            <textarea id="comment-body" rows="3" maxlength="5000" required></textarea>
+            <button type="submit">Comentar</button>
+          </form>
+        </section>
+
+        <div class="report-action">
+          <button id="report-note" class="secondary" type="button" hidden>
+            Denunciar nota
+          </button>
+        </div>
       </section>
     </div>
 

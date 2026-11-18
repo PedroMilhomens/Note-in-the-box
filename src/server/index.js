@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { loadConfig } from "./config.js";
 import { Router } from "./router.js";
-import { readJson } from "./http/body.js";
+import { readBody, readJson } from "./http/body.js";
 import { HttpError } from "./http/errors.js";
 import { json } from "./http/json.js";
 import { serveStatic } from "./http/static.js";
@@ -17,6 +17,7 @@ import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerClassRoutes } from "./modules/classes/routes.js";
 import { registerNoteRoutes } from "./modules/notes/routes.js";
 import { registerNoteNetworkRoutes } from "./modules/notes/network-routes.js";
+import { registerNoteCollaborationRoutes } from "./modules/notes/collaboration-routes.js";
 
 const config = loadConfig();
 
@@ -123,6 +124,10 @@ async function dispatch(request, response, {
         timeoutMs: bodyTimeoutMs,
         ...options,
       }),
+      readBody: (options) => readBody(request, {
+        timeoutMs: bodyTimeoutMs,
+        ...options,
+      }),
     });
 
     if (!response.writableEnded) {
@@ -153,6 +158,7 @@ export function createServer({
   privacyVersion = config.privacyVersion,
   legalDocumentsApproved = config.legalDocumentsApproved,
   rateLimiter,
+  uploadRoot = path.resolve("uploads"),
 } = {}) {
   if (pool) {
     registerAuthRoutes(router, {
@@ -165,6 +171,20 @@ export function createServer({
     registerClassRoutes(router, { pool, rateLimiter });
     registerNoteRoutes(router, { pool, rateLimiter });
     registerNoteNetworkRoutes(router, { pool, rateLimiter });
+    const resolvedUploadRoot = path.resolve(uploadRoot);
+    const resolvedStaticRoot = path.resolve(staticRoot);
+    if (
+      resolvedUploadRoot === resolvedStaticRoot
+      || resolvedUploadRoot.startsWith(`${resolvedStaticRoot}${path.sep}`)
+    ) {
+      throw new TypeError("O armazenamento de anexos deve ficar fora da pasta estática");
+    }
+    registerNoteCollaborationRoutes(router, {
+      pool,
+      uploadRoot: resolvedUploadRoot,
+      staticRoot: resolvedStaticRoot,
+      rateLimiter,
+    });
   }
 
   const server = http.createServer({

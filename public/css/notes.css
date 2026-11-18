@@ -183,10 +183,44 @@ textarea {
 }
 
 .references,
+.collaboration,
 .graph-panel {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #d5dde4;
+}
+
+.inline-form {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.inline-form input[type="file"] {
+  border: 0;
+  padding: 0.25rem 0;
+}
+
+.inline-form textarea {
+  min-height: 5rem;
+}
+
+.comment-actions,
+.report-action {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.collaboration li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #e3e8ec;
+  overflow-wrap: anywhere;
+}
+
+.collaboration li:last-child {
+  border-bottom: 0;
 }
 
 .graph-panel {
