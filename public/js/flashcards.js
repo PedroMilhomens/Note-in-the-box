@@ -25,6 +25,7 @@ const createCardButton = document.querySelector("#create-card");
 const weeklyTotal = document.querySelector("#weekly-total");
 const weeklyList = document.querySelector("#weekly-list");
 const forumLink = document.querySelector("#forum-link");
+const pomodoroLink = document.querySelector("#pomodoro-link");
 const notesLink = document.querySelector(".page-header .brand");
 
 let classes = [];
@@ -199,7 +200,7 @@ async function loadClass(classId) {
   const address = new URL(window.location.href);
   address.searchParams.set("classId", classId);
   window.history.replaceState(null, "", address);
-  for (const link of [forumLink, notesLink]) {
+  for (const link of [forumLink, notesLink, pomodoroLink]) {
     const target = new URL(link.href);
     target.searchParams.set("classId", classId);
     link.href = target.href;

@@ -27,6 +27,7 @@ const insertReferenceButton = document.querySelector("#insert-reference");
 const noteGraph = document.querySelector("#note-graph");
 const forumLink = document.querySelector("#forum-link");
 const flashcardsLink = document.querySelector("#flashcards-link");
+const pomodoroLink = document.querySelector("#pomodoro-link");
 const selectedFlashcardForm = document.querySelector("#selected-flashcard-form");
 const selectedFlashcardAnswer = document.querySelector("#selected-flashcard-answer");
 const selectedFlashcardStatus = document.querySelector("#selected-flashcard-status");
@@ -158,6 +159,9 @@ function updateAddress() {
   const flashcardsAddress = new URL("/flashcards.html", window.location.origin);
   flashcardsAddress.searchParams.set("classId", currentClass.id);
   flashcardsLink.href = flashcardsAddress.href;
+  const pomodoroAddress = new URL("/pomodoro.html", window.location.origin);
+  pomodoroAddress.searchParams.set("classId", currentClass.id);
+  pomodoroLink.href = pomodoroAddress.href;
 }
 
 function makeButton(label, className, onClick) {

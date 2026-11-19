@@ -1,0 +1,106 @@
+.page > .panel {
+  margin-bottom: 1rem;
+}
+
+.timer-panel {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.timer-panel h2,
+.timer-panel p {
+  margin: 0;
+}
+
+.mode-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.timer-display {
+  color: #174c73;
+  font-size: clamp(4rem, 18vw, 8rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.cycle-progress {
+  color: #526170;
+}
+
+.timer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.timer-actions button,
+.settings-form button {
+  min-width: 7rem;
+  min-height: 44px;
+}
+
+.settings-form fieldset {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0;
+  border: 0;
+}
+
+.settings-form legend,
+.settings-form button {
+  grid-column: 1 / -1;
+}
+
+.setting-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.settings-form button {
+  justify-self: start;
+}
+
+.settings-form fieldset:disabled {
+  opacity: 0.7;
+}
+
+.visibility-warning {
+  width: 100%;
+  padding: 0.75rem;
+  border-left: 4px solid #9a5d00;
+  background: #fff3d6;
+  color: #573500;
+  text-align: left;
+}
+
+.capability-status {
+  min-height: 1.5rem;
+  color: #526170;
+}
+
+@media (max-width: 42rem) {
+  .settings-form fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-form button {
+    grid-column: auto;
+    justify-self: stretch;
+  }
+
+  .timer-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .timer-actions button {
+    width: 100%;
+  }
+}

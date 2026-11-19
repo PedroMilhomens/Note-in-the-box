@@ -112,5 +112,14 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - Em `/flashcards.html` é possível criar cartões manualmente, revisar os pendentes e consultar o desempenho. Em `/notes.html`, selecionar um trecho da visualização preenche a resposta e vincula o cartão à nota. O texto selecionado não é colocado na URL nem persistido em armazenamento local.
 - A migration `004_flashcard_review_indexes.sql` adiciona índices ao histórico sem alterar migrations anteriores. Conteúdo de cartão é exibido como texto; o título de nota relacionado só é consultado dentro da mesma classe.
 
+## Pomodoro - fase 10
+
+- `/pomodoro.html` inicia ciclos de foco, pausa curta e pausa longa. Os padrões são 25, 5 e 15 minutos; cada duração pode ser configurada entre 1 e 120 minutos. A pausa longa segue quatro ciclos de foco concluídos.
+- O timer usa Web Worker e calcula o restante por prazo absoluto, para não acumular deriva em abas em segundo plano. Sem suporte a Worker, usa uma alternativa que recalcula o tempo restante.
+- Notificações genéricas só podem solicitar permissão após o usuário iniciar o timer; o Wake Lock é tentado somente durante foco e a saída da aba durante foco é avisada pelo Page Visibility. APIs opcionais indisponíveis não impedem o timer.
+- `POST /api/pomodoro/sessions` registra ciclos concluídos para a conta autenticada. `kind` aceita `foco`, `pausa` ou `longa`; `durationS` aceita 60 a 7200 segundos; `startedAt` deve ser ISO UTC e indicar que a duração passou; `classId` pode ser nulo ou apontar para uma classe de que o usuário seja membro. Ciclos incompletos não são gravados.
+- As sessões são privadas do usuário; uma classe associada só é aceita após validação de associação. O endpoint aplica rate limit, valida a entrada e não registra texto de notas ou outros conteúdos.
+- O registro técnico desses dados e as pendências humanas de base legal e retenção estão em [TRATAMENTO-DE-DADOS.md](./TRATAMENTO-DE-DADOS.md).
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

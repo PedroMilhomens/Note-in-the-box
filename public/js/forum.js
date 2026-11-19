@@ -2,6 +2,7 @@ const classSelect = document.querySelector("#class-select");
 const className = document.querySelector("#class-name");
 const feedback = document.querySelector("#feedback");
 const flashcardsLink = document.querySelector("#flashcards-link");
+const pomodoroLink = document.querySelector("#pomodoro-link");
 const rulesView = document.querySelector("#rules-view");
 const rulesForm = document.querySelector("#rules-form");
 const rulesInput = document.querySelector("#rules-input");
@@ -234,6 +235,9 @@ async function loadClass(classId) {
   const flashcardsAddress = new URL("/flashcards.html", window.location.origin);
   flashcardsAddress.searchParams.set("classId", classId);
   flashcardsLink.href = flashcardsAddress.href;
+  const pomodoroAddress = new URL("/pomodoro.html", window.location.origin);
+  pomodoroAddress.searchParams.set("classId", classId);
+  pomodoroLink.href = pomodoroAddress.href;
   await Promise.all([loadTopics(), loadNoteOptions()]);
   showFeedback(`Fórum da classe ${result.class.name}.`);
 }

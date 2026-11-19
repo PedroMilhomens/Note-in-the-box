@@ -20,6 +20,7 @@ import { registerNoteNetworkRoutes } from "./modules/notes/network-routes.js";
 import { registerNoteCollaborationRoutes } from "./modules/notes/collaboration-routes.js";
 import { registerForumRoutes } from "./modules/forum/routes.js";
 import { registerFlashcardRoutes } from "./modules/flashcards/routes.js";
+import { registerPomodoroRoutes } from "./modules/pomodoro/routes.js";
 
 const config = loadConfig();
 
@@ -175,6 +176,7 @@ export function createServer({
     registerNoteNetworkRoutes(router, { pool, rateLimiter });
     registerForumRoutes(router, { pool, rateLimiter });
     registerFlashcardRoutes(router, { pool, rateLimiter });
+    registerPomodoroRoutes(router, { pool, rateLimiter });
     const resolvedUploadRoot = path.resolve(uploadRoot);
     const resolvedStaticRoot = path.resolve(staticRoot);
     if (
