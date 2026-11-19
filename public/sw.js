@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v2";
+const CACHE_NAME = "note-in-the-box-shell-v3";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -18,6 +18,7 @@ const SHELL_PATHS = [
   "/assets/fonts/inter-600.ttf",
   "/assets/fonts/space-grotesk-500.ttf",
   "/assets/fonts/space-grotesk-700.ttf",
+  "/css/screens.css",
   "/css/tokens.css",
   "/css/base.css",
   "/css/components.css",
@@ -26,6 +27,24 @@ const SHELL_PATHS = [
   "/css/flashcards.css",
   "/css/pomodoro.css",
   "/css/meus-dados.css",
+  "/js/app.js",
+  "/js/api.js",
+  "/js/router-client.js",
+  "/js/routes.js",
+  "/js/store.js",
+  "/js/components/dom.js",
+  "/js/components/layout.js",
+  "/js/components/placeholder.js",
+  "/js/components/toast.js",
+  "/js/views/entrar.js",
+  "/js/views/cadastro.js",
+  "/js/views/inicio.js",
+  "/js/views/classes.js",
+  "/js/views/classe.js",
+  "/js/views/cartoes.js",
+  "/js/views/foco.js",
+  "/js/views/conta.js",
+  "/js/views/nao-encontrada.js",
   "/js/pwa.js",
   "/js/offline-store.js",
   "/js/offline-sync.js",
@@ -37,6 +56,11 @@ const SHELL_PATHS = [
   "/js/pomodoro-worker.js",
   "/js/meus-dados.js",
 ];
+// Rotas do app de página única: usam o shell em cache ("/"). Mantida em sincronia com o servidor.
+const APP_ROUTE_PREFIXES = ["/entrar", "/cadastro", "/inicio", "/classes", "/cartoes", "/foco", "/conta"];
+function isAppRoute(pathname) {
+  return APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
 const SHELL_PATH_SET = new Set(SHELL_PATHS);
 
 self.addEventListener("install", (event) => {
@@ -72,7 +96,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const cachePath = url.pathname === "/" ? "/" : url.pathname;
+  const cachePath = url.pathname === "/" || isAppRoute(url.pathname) ? "/" : url.pathname;
   if (!SHELL_PATH_SET.has(cachePath)) return;
 
   event.respondWith((async () => {

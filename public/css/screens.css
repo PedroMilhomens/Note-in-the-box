@@ -1,0 +1,94 @@
+/* Estrutura das telas: layout do app, navegação lateral (desktop) e inferior (celular). */
+.carregando { padding: var(--espaco-6); color: var(--cor-texto-suave); }
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  grid-template-areas: "topo topo" "nav conteudo";
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+.app-topo {
+  grid-area: topo;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-4);
+  padding: var(--espaco-3) var(--espaco-5);
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.app-topo-acoes { display: flex; align-items: center; gap: var(--espaco-3); }
+.app-topo-acoes .status { font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
+
+.app-nav {
+  grid-area: nav;
+  padding: var(--espaco-4);
+  border-right: 1px solid var(--cor-borda);
+  background: var(--cor-fundo);
+}
+
+.app-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-2); }
+
+.app-nav a {
+  display: flex;
+  align-items: center;
+  min-height: var(--alvo-toque);
+  padding: var(--espaco-2) var(--espaco-4);
+  border-radius: var(--raio-pequeno);
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-nav a:hover { background: var(--cor-superficie); color: var(--cor-texto); }
+.app-nav a[aria-current="page"] { background: var(--cor-primaria); color: var(--cor-texto); }
+
+.app-conteudo {
+  grid-area: conteudo;
+  min-width: 0;
+  padding: var(--espaco-6);
+  max-width: var(--largura-conteudo);
+  width: 100%;
+  margin-inline: auto;
+}
+
+.app-conteudo:focus { outline: none; }
+
+.pagina-publica {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--espaco-5);
+}
+
+.pagina-publica > .conteudo-publico { width: 100%; max-width: 28rem; }
+.em-construcao { max-width: 40rem; }
+.em-construcao ul { padding-left: var(--espaco-5); }
+
+@media (max-width: 899px) {
+  .app-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "topo" "conteudo";
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  .app-topo { padding: var(--espaco-3) var(--espaco-4); }
+
+  .app-nav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 20;
+    padding: var(--espaco-2) var(--espaco-2) calc(var(--espaco-2) + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--cor-borda);
+    background: var(--cor-superficie);
+  }
+
+  .app-nav ul { grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--espaco-1); }
+  .app-nav a { justify-content: center; padding: var(--espaco-2); font-size: var(--texto-pequeno); text-align: center; }
+  .app-nav .somente-desktop { display: none; }
+  .app-conteudo { padding: var(--espaco-4); }
+}

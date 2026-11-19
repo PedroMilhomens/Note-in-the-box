@@ -122,3 +122,27 @@ export async function serveStatic(request, response, staticRoot) {
   response.end(request.method === "HEAD" ? undefined : body);
   return true;
 }
+
+// Rotas do app de página única. Mantida em sincronia com public/js/routes.js e public/sw.js.
+export const APP_ROUTE_PREFIXES = [
+  "/entrar",
+  "/cadastro",
+  "/inicio",
+  "/classes",
+  "/cartoes",
+  "/foco",
+  "/conta",
+];
+
+export function isAppRoute(pathname) {
+  return APP_ROUTE_PREFIXES.some((prefix) => (
+    pathname === prefix || pathname.startsWith(`${prefix}/`)
+  ));
+}
+
+// Entrega o shell (index.html) para rotas do app; rotas desconhecidas continuam 404.
+export async function serveAppShell(request, response, staticRoot) {
+  const pathname = (request.url ?? "/").split("?", 1)[0];
+  if (!isAppRoute(pathname)) return false;
+  return serveStatic({ url: "/", method: request.method }, response, staticRoot);
+}

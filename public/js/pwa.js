@@ -1,18 +1,17 @@
 import { clearOfflineData } from "./offline-store.js";
 
-const logoutButton = document.querySelector("#logout-button");
-const logoutStatus = document.querySelector("#logout-status");
 const logoutChannel = "BroadcastChannel" in globalThis
   ? new BroadcastChannel("note-in-the-box-logout")
   : null;
 
 function showLogoutStatus(message, isError = false) {
+  const logoutStatus = document.querySelector("#logout-status");
   if (!logoutStatus) return;
   logoutStatus.textContent = message;
   logoutStatus.classList.toggle("error", isError);
 }
 
-async function logout() {
+async function logout(logoutButton) {
   if (!navigator.onLine) {
     showLogoutStatus("Conecte-se à internet para encerrar sua sessão.", true);
     return;
@@ -48,11 +47,11 @@ async function logout() {
   window.location.replace("/");
 }
 
-if (logoutButton) {
-  logoutButton.addEventListener("click", () => {
-    void logout();
-  });
-}
+// Delegação: o botão pode ser criado depois (shell do app) ou já existir (páginas antigas).
+document.addEventListener("click", (event) => {
+  const logoutButton = event.target.closest?.("#logout-button");
+  if (logoutButton) void logout(logoutButton);
+});
 
 logoutChannel?.addEventListener("message", (event) => {
   if (event.data === "logout") window.location.replace("/");

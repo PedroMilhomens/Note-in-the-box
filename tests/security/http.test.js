@@ -117,7 +117,7 @@ test("conteúdo estático vem apenas de public e traversal não revela arquivos"
   const rootResponse = await fetch(`${baseUrl}/`);
   assert.equal(rootResponse.status, 200);
   assertSecurityHeaders(rootResponse);
-  assert.match(await rootResponse.text(), /EM BREVE!/);
+  assert.match(await rootResponse.text(), /data-app-shell/);
 
   const hiddenResponse = await fetch(`${baseUrl}/.env`);
   assert.equal(hiddenResponse.status, 404);

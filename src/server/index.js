@@ -7,7 +7,7 @@ import { Router } from "./router.js";
 import { readBody, readJson } from "./http/body.js";
 import { HttpError } from "./http/errors.js";
 import { json } from "./http/json.js";
-import { serveStatic } from "./http/static.js";
+import { serveAppShell, serveStatic } from "./http/static.js";
 import {
   assertSameOrigin,
   isStateChangingMethod,
@@ -144,6 +144,7 @@ async function dispatch(request, response, {
     setRoute("static");
     const served = await serveStatic(request, response, staticRoot);
     if (served) return "static";
+    if (await serveAppShell(request, response, staticRoot)) return "static";
   }
 
   sendNotFound(response);
