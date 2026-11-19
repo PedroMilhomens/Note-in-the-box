@@ -57,14 +57,9 @@
 
 .app-conteudo:focus { outline: none; }
 
-.pagina-publica {
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
-  padding: var(--espaco-5);
-}
-
-.pagina-publica > .conteudo-publico { width: 100%; max-width: 28rem; }
+.pagina-publica { min-height: 100vh; }
+.conteudo-publico { width: 100%; min-height: 100vh; }
+.conteudo-publico:focus { outline: none; }
 .em-construcao { max-width: 40rem; }
 .em-construcao ul { padding-left: var(--espaco-5); }
 
@@ -91,4 +86,92 @@
   .app-nav a { justify-content: center; padding: var(--espaco-2); font-size: var(--texto-pequeno); text-align: center; }
   .app-nav .somente-desktop { display: none; }
   .app-conteudo { padding: var(--espaco-4); }
+}
+
+/* Login e cadastro */
+.auth { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+
+.auth-marca {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-5);
+  padding: var(--espaco-6) clamp(var(--espaco-5), 5vw, 6rem);
+  background: var(--cor-superficie);
+}
+
+.auth-marca .marca img { width: 48px; height: 48px; }
+.auth-ilustracao { width: 100%; max-width: 40rem; margin-block: auto; }
+.auth-ilustracao line { stroke: var(--cor-borda); stroke-width: 2; }
+.auth-ilustracao circle { fill: var(--cor-primaria); stroke: var(--cor-borda); stroke-width: 2; }
+.auth-ilustracao .no-central { stroke: var(--cor-foco); stroke-width: 3; }
+.auth-ilustracao .no-ponto { fill: var(--cor-texto); stroke: none; }
+.auth-titulo { font-size: clamp(2rem, 4vw, 3.25rem); margin: 0; }
+.auth-subtitulo { color: var(--cor-texto-suave); font-size: var(--texto-grande); margin: 0; max-width: 36rem; }
+.auth-chips { list-style: none; display: flex; flex-wrap: wrap; gap: var(--espaco-3); margin: 0; padding: 0; }
+.auth-chips li { padding: var(--espaco-2) var(--espaco-4); border: 1px solid var(--cor-borda); border-radius: 999px; }
+
+.auth-painel { display: grid; align-content: center; padding: var(--espaco-6) clamp(var(--espaco-5), 5vw, 6rem); }
+.auth-painel > * { width: 100%; max-width: 28rem; margin-inline: auto; }
+.auth-titulo-form { margin-bottom: var(--espaco-1); }
+.auth-dica { color: var(--cor-texto-suave); margin-bottom: var(--espaco-5); }
+
+.seletor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaco-1);
+  padding: var(--espaco-1);
+  margin-bottom: var(--espaco-5);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.seletor a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--alvo-toque);
+  border-radius: var(--raio-pequeno);
+  color: var(--cor-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.seletor a[aria-current="page"] { background: var(--cor-primaria); }
+.seletor a:not([aria-current="page"]):hover { background: var(--cor-superficie-alta); }
+
+.auth .campo input { background: var(--cor-superficie); }
+.auth .campo input::placeholder { color: var(--cor-placeholder); opacity: 1; }
+.campo-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espaco-4); }
+.campo-duplo > .campo { min-width: 0; }
+.campo-senha { position: relative; }
+.campo-senha input { padding-right: 6.5rem; }
+.campo-senha .btn-texto { position: absolute; right: var(--espaco-1); bottom: 0; }
+
+.btn-texto {
+  min-height: var(--alvo-toque);
+  padding: 0 var(--espaco-3);
+  background: transparent;
+  border: 0;
+  color: var(--cor-foco);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-destaque { background: var(--cor-texto); color: var(--cor-fundo); border-color: var(--cor-texto); }
+.btn-destaque:hover { background: #ffffff; }
+.auth-form .aviso { margin-bottom: var(--espaco-4); }
+.auth-form .btn { margin-top: var(--espaco-3); min-height: 3.25rem; }
+
+@media (max-width: 899px) {
+  .auth { grid-template-columns: minmax(0, 1fr); min-height: 100vh; }
+  .auth-marca { background: transparent; padding: var(--espaco-5) var(--espaco-4) 0; gap: var(--espaco-3); }
+  .auth-ilustracao,
+  .auth-chips,
+  .auth-titulo-form,
+  .auth-dica { display: none; }
+  .auth-titulo { font-size: 2rem; }
+  .auth-subtitulo { font-size: var(--texto-base); }
+  .auth-painel { padding: var(--espaco-5) var(--espaco-4) var(--espaco-6); align-content: start; }
+  .campo-duplo { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }

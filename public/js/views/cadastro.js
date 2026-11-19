@@ -1,7 +1,7 @@
-import { emConstrucao } from "../components/placeholder.js";
+import { renderAuth } from "../components/auth-form.js";
 
 export const titulo = "Criar conta";
 
-export function render() {
-  return emConstrucao("Criar conta", "C");
+export function render(contexto) {
+  return renderAuth({ ...contexto, modo: "cadastro" });
 }

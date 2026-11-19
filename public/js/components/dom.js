@@ -25,3 +25,18 @@ export function limpar(elemento) {
   elemento.replaceChildren();
   return elemento;
 }
+
+const NS_SVG = "http://www.w3.org/2000/svg";
+
+// Elementos SVG decorativos (atributos fixos escritos pelo código, nunca vindos do usuário).
+export function svg(tag, atributos = {}, ...filhos) {
+  const elemento = document.createElementNS(NS_SVG, tag);
+  for (const [nome, valor] of Object.entries(atributos)) {
+    if (nome.startsWith("on") || /^(href|xlink:href)$/.test(nome)) {
+      throw new TypeError("Atributo não permitido em SVG");
+    }
+    elemento.setAttribute(nome, String(valor));
+  }
+  elemento.append(...filhos);
+  return elemento;
+}

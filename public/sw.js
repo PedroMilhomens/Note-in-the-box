@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v3";
+const CACHE_NAME = "note-in-the-box-shell-v4";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -32,6 +32,8 @@ const SHELL_PATHS = [
   "/js/router-client.js",
   "/js/routes.js",
   "/js/store.js",
+  "/js/auth-validation.js",
+  "/js/components/auth-form.js",
   "/js/components/dom.js",
   "/js/components/layout.js",
   "/js/components/placeholder.js",
