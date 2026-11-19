@@ -67,6 +67,15 @@ test("migration complementar preenche metadados sem editar o schema inicial", as
   assert.match(sql, /ALTER TABLE audit_log[\s\S]+ADD COLUMN created_at timestamptz NOT NULL DEFAULT now\(\)/);
 });
 
+test("migration de fórum adiciona regras sem alterar dados existentes", async () => {
+  const sql = await fs.readFile(
+    new URL("../../db/migrations/003_class_forum_rules.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(sql, /ALTER TABLE classes/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS rules text NOT NULL DEFAULT ''/);
+});
+
 test("migrator registra migration e não repete migration aplicada", async () => {
   const appliedNames = new Set();
   let transactionDepth = 0;
@@ -122,5 +131,6 @@ test("migrator registra migration e não repete migration aplicada", async () =>
   assert.deepEqual([...appliedNames], [
     "001_init.sql",
     "002_complete_table_metadata.sql",
+    "003_class_forum_rules.sql",
   ]);
 });

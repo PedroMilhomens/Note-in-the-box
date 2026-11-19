@@ -10,7 +10,7 @@ export async function createClass(pool, {
     const classResult = await client.query(
       `INSERT INTO classes (name, professor_name, invite_code, created_by)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, name, professor_name, created_at`,
+       RETURNING id, name, professor_name, rules, created_at`,
       [name, professorName, inviteCodeHash, userId],
     );
     const createdClass = classResult.rows[0];
@@ -43,7 +43,7 @@ export async function joinClass(pool, { userId, inviteCodeHash }) {
   try {
     await client.query("BEGIN");
     const classResult = await client.query(
-      `SELECT id, name, professor_name, created_at
+      `SELECT id, name, professor_name, rules, created_at
        FROM classes
        WHERE invite_code = $1
        FOR UPDATE`,
@@ -99,7 +99,7 @@ export async function isClassMember(pool, classId, userId) {
 
 export async function listUserClasses(pool, userId, { limit, offset }) {
   const result = await pool.query(
-    `SELECT c.id, c.name, c.professor_name, c.created_at,
+    `SELECT c.id, c.name, c.professor_name, c.rules, c.created_at,
             cm.role, b.id AS branch_id
      FROM class_members cm
      JOIN classes c ON c.id = cm.class_id
@@ -118,7 +118,7 @@ export async function listUserClasses(pool, userId, { limit, offset }) {
 
 export async function getClassDetails(pool, classId, { limit, offset }) {
   const classResult = await pool.query(
-    `SELECT id, name, professor_name, created_at
+    `SELECT id, name, professor_name, rules, created_at
      FROM classes
      WHERE id = $1`,
     [classId],
@@ -161,11 +161,34 @@ export async function getClassDetails(pool, classId, { limit, offset }) {
   };
 }
 
+export async function updateClassRules(pool, {
+  classId,
+  userId,
+  rules,
+}) {
+  const result = await pool.query(
+    `UPDATE classes c
+     SET rules = $3
+     WHERE c.id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM class_members cm
+         WHERE cm.class_id = c.id
+           AND cm.user_id = $2
+           AND cm.role = 'owner'
+       )
+     RETURNING c.id, c.name, c.professor_name, c.rules, c.created_at`,
+    [classId, userId, rules],
+  );
+  return result.rows[0] ? mapClass(result.rows[0]) : null;
+}
+
 function mapClass(row) {
   return {
     id: row.id,
     name: row.name,
     professorName: row.professor_name,
+    rules: row.rules ?? "",
     createdAt: row.created_at,
   };
 }

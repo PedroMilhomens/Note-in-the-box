@@ -91,8 +91,17 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - Membros da classe podem consultar e comentar notas ativas. As respostas incluem autoria e data; comentários podem ser excluídos pelo próprio autor ou pelo dono da nota.
 - O dono da nota pode anexar até cinco arquivos de até 5 MB cada: PDF, PNG, JPEG ou WebP. O servidor confere a assinatura dos bytes, gera uma chave aleatória e armazena os arquivos na pasta ignorada `uploads/`, fora de `public/`.
 - Anexos são listados e baixados somente por membros autenticados da classe; downloads usam `Content-Disposition: attachment` e `nosniff`. Só o dono da nota pode enviar ou remover anexos.
-- O editor permite denunciar notas e comentários. `POST /api/classes/:classId/reports` recebe `targetType`, `targetId` e `reason`, valida se o alvo pertence à classe e aceita `note`, `comment`, `topic` ou `post`; os tipos de fórum ficam disponíveis para a fase 8.
+- O editor permite denunciar notas e comentários; o fórum permite denunciar tópicos e respostas. `POST /api/classes/:classId/reports` recebe `targetType`, `targetId` e `reason` e valida se o alvo ativo pertence à classe.
 - Comentários, upload, download, remoção de anexos e denúncias exigem sessão e associação à classe. Denúncias e criação de conteúdo têm limite de tentativas.
+
+## Fórum - fase 8
+
+- `GET` e `POST /api/classes/:classId/forum/topics` listam e criam tópicos. A listagem é paginada; título aceita até 200 caracteres e o corpo até 20.000.
+- `GET /api/classes/:classId/forum/topics/:topicId/posts` retorna o tópico e respostas; `POST` no mesmo caminho publica uma resposta. As respostas também são paginadas.
+- Tópicos podem referenciar opcionalmente uma nota ativa da mesma classe; referências a outra classe são rejeitadas. `GET /api/classes/:classId/forum/notes` fornece opções paginadas para a interface.
+- `GET /api/classes/:classId` inclui as regras da classe. O dono pode alterá-las com `PATCH /api/classes/:classId/rules` (até 5000 caracteres); outros membros só podem consultá-las.
+- O autor pode excluir seu conteúdo e o dono da classe pode moderar tópicos ou respostas de qualquer membro; a exclusão é lógica. A interface em `/forum.html` mostra as regras no topo e oferece denúncia em tópicos e respostas.
+- Todas as rotas do fórum exigem associação à classe; criação de tópicos, respostas e alteração de regras têm limite de tentativas. Conteúdo de usuários é exibido como texto, sem interpretação HTML.
 
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

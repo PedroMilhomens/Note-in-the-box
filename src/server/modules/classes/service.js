@@ -5,6 +5,7 @@ import {
   getClassDetails,
   joinClass as joinClassRecord,
   listUserClasses,
+  updateClassRules as updateClassRulesRecord,
 } from "./repository.js";
 
 export async function createClass(pool, { userId, name, professorName }) {
@@ -40,6 +41,14 @@ export async function getClass(pool, classId, pagination) {
     throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
   }
   return { ...result, pagination };
+}
+
+export async function updateClassRules(pool, { classId, userId, rules }) {
+  const result = await updateClassRulesRecord(pool, { classId, userId, rules });
+  if (!result) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "permissão negada");
+  }
+  return { class: result };
 }
 
 function hashInviteCode(inviteCode) {

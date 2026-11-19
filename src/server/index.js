@@ -18,6 +18,7 @@ import { registerClassRoutes } from "./modules/classes/routes.js";
 import { registerNoteRoutes } from "./modules/notes/routes.js";
 import { registerNoteNetworkRoutes } from "./modules/notes/network-routes.js";
 import { registerNoteCollaborationRoutes } from "./modules/notes/collaboration-routes.js";
+import { registerForumRoutes } from "./modules/forum/routes.js";
 
 const config = loadConfig();
 
@@ -171,6 +172,7 @@ export function createServer({
     registerClassRoutes(router, { pool, rateLimiter });
     registerNoteRoutes(router, { pool, rateLimiter });
     registerNoteNetworkRoutes(router, { pool, rateLimiter });
+    registerForumRoutes(router, { pool, rateLimiter });
     const resolvedUploadRoot = path.resolve(uploadRoot);
     const resolvedStaticRoot = path.resolve(staticRoot);
     if (

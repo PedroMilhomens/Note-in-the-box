@@ -1,0 +1,2 @@
+ALTER TABLE classes
+  ADD COLUMN IF NOT EXISTS rules text NOT NULL DEFAULT '';

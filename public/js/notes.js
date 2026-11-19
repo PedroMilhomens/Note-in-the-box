@@ -25,6 +25,7 @@ const referenceDialog = document.querySelector("#reference-dialog");
 const referenceSelect = document.querySelector("#reference-select");
 const insertReferenceButton = document.querySelector("#insert-reference");
 const noteGraph = document.querySelector("#note-graph");
+const forumLink = document.querySelector("#forum-link");
 
 let currentUser = null;
 let classes = [];
@@ -112,6 +113,9 @@ function updateAddress() {
   address.searchParams.set("classId", currentClass.id);
   address.searchParams.set("branchId", branchSelect.value);
   window.history.replaceState(null, "", address);
+  const forumAddress = new URL("/forum.html", window.location.origin);
+  forumAddress.searchParams.set("classId", currentClass.id);
+  forumLink.href = forumAddress.href;
 }
 
 function makeButton(label, className, onClick) {

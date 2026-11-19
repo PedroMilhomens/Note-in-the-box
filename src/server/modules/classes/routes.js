@@ -8,10 +8,12 @@ import {
   getClass,
   getMyClasses,
   joinClass,
+  updateClassRules,
 } from "./service.js";
 
 const MAX_NAME_LENGTH = 100;
 const MAX_PROFESSOR_NAME_LENGTH = 120;
+const MAX_CLASS_RULES_LENGTH = 5000;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 const MAX_OFFSET = 1_000_000;
@@ -47,6 +49,24 @@ export function parseClassInput(body) {
     invalidClassInput();
   }
   return { name, professorName: professorName || null };
+}
+
+export function parseClassRulesInput(body) {
+  if (
+    !isRecord(body)
+    || Object.keys(body).length !== 1
+    || typeof body.rules !== "string"
+  ) {
+    invalidClassInput();
+  }
+  const rules = body.rules.trim();
+  if (
+    rules.length > MAX_CLASS_RULES_LENGTH
+    || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(rules)
+  ) {
+    invalidClassInput();
+  }
+  return { rules };
 }
 
 export function parseInviteCode(value) {
@@ -120,4 +140,20 @@ export function registerClassRoutes(router, {
     const result = await getClass(pool, params.classId, getPagination(request));
     json(response, 200, result);
   });
+
+  router.add(
+    "PATCH",
+    "/api/classes/:classId/rules",
+    async (request, response, params, context) => {
+      const auth = await exigirMembro(request, pool, params.classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      const { rules } = parseClassRulesInput(await context.readJson());
+      const result = await updateClassRules(pool, {
+        classId: params.classId,
+        userId: auth.user.id,
+        rules,
+      });
+      json(response, 200, result);
+    },
+  );
 }
