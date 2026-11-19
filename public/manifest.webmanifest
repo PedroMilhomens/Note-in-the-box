@@ -1,0 +1,18 @@
+{
+  "name": "Note in the box",
+  "short_name": "Note in the box",
+  "description": "Anotações e rascunhos de estudo, também offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f6f8",
+  "theme_color": "#174c73",
+  "icons": [
+    {
+      "src": "/assets/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -65,6 +65,37 @@ textarea:focus-visible {
   margin-bottom: 1.25rem;
 }
 
+.page-header > #logout-button {
+  min-width: 5rem;
+  min-height: 2.75rem;
+}
+
+.offline-panel,
+.conflict-panel {
+  margin-bottom: 1rem;
+}
+
+.offline-panel .muted {
+  margin-bottom: 0;
+  color: #435260;
+}
+
+.conflict-panel {
+  border-color: #9c5e08;
+}
+
+.conflict-panel pre {
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid #d5dde4;
+  background: #f7fafb;
+}
+
+.actions {
+  flex-wrap: wrap;
+}
+
 .brand {
   color: #174c73;
   font-weight: 700;

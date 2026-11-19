@@ -1,3 +1,24 @@
+import { syncPendingNotes } from "./offline-sync.js";
+import {
+  completeNoteMutation,
+  clearOfflineData,
+  deleteNoteMutation,
+  deleteOfflineDraft,
+  deleteOfflineNote,
+  getOfflineDraft,
+  getOfflineNote,
+  getOfflineSession,
+  listNoteMutations,
+  listOfflineNotes,
+  offlineNoteKey,
+  offlineStorageAvailable,
+  saveNoteMutation,
+  saveOfflineBranchNotes,
+  saveOfflineDraft,
+  saveOfflineNote,
+  saveOfflineSession,
+} from "./offline-store.js";
+
 const classSelect = document.querySelector("#class-select");
 const branchSelect = document.querySelector("#branch-select");
 const feedback = document.querySelector("#feedback");
@@ -33,6 +54,14 @@ const selectedFlashcardAnswer = document.querySelector("#selected-flashcard-answ
 const selectedFlashcardStatus = document.querySelector("#selected-flashcard-status");
 const selectedFlashcardQuestion = document.querySelector("#selected-flashcard-question");
 const createSelectedFlashcardButton = document.querySelector("#create-selected-flashcard");
+const offlineStatus = document.querySelector("#offline-status");
+const syncNowButton = document.querySelector("#sync-now");
+const clearOfflineDataButton = document.querySelector("#clear-offline-data");
+const conflictPanel = document.querySelector("#note-conflict");
+const conflictMessage = document.querySelector("#conflict-message");
+const serverNotePreview = document.querySelector("#server-note-preview");
+const useServerVersionButton = document.querySelector("#use-server-version");
+const saveLocalCopyButton = document.querySelector("#save-local-copy");
 
 let currentUser = null;
 let classes = [];
@@ -41,6 +70,10 @@ let currentNote = null;
 let canEdit = false;
 let referenceCandidates = [];
 let selectedFlashcardText = "";
+let offlineMode = false;
+let draftSaveTimer = null;
+let activeConflict = null;
+let syncInProgress = false;
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
@@ -56,7 +89,13 @@ async function request(path, options = {}) {
     ? await response.json()
     : null;
   if (!response.ok) {
-    throw new Error(payload?.erro ?? "Não foi possível concluir a solicitação.");
+    const error = new Error(
+      payload?.erro ?? "Não foi possível concluir a solicitação.",
+    );
+    error.status = response.status;
+    error.code = payload?.codigo;
+    error.payload = payload;
+    throw error;
   }
   if (!payload) throw new Error("Resposta inválida do servidor.");
   return payload;
@@ -65,6 +104,95 @@ async function request(path, options = {}) {
 function showFeedback(message, isError = false) {
   feedback.textContent = message;
   feedback.classList.toggle("error", isError);
+}
+
+function updateOfflineStatus(message, isError = false) {
+  offlineStatus.textContent = message;
+  offlineStatus.classList.toggle("error", isError);
+  syncNowButton.disabled = !navigator.onLine || syncInProgress;
+}
+
+function isLocalNote(noteId) {
+  return typeof noteId === "string" && noteId.startsWith("local-");
+}
+
+function localNoteId() {
+  if (!globalThis.crypto?.randomUUID) {
+    throw new Error("Não é possível criar uma nota offline neste navegador.");
+  }
+  return `local-${crypto.randomUUID()}`;
+}
+
+function currentNoteFields() {
+  return {
+    title: titleInput.value,
+    lessonDate: lessonDateInput.value || null,
+    status: statusInput.value,
+    body: bodyInput.value,
+  };
+}
+
+function offlineNoteRecord(noteId, fields, {
+  baseUpdatedAt = null,
+  pending = false,
+} = {}) {
+  return {
+    id: noteId,
+    userId: currentUser.id,
+    userName: currentUser.name,
+    classId: currentClass.id,
+    branchId: branchSelect.value,
+    ownerId: currentUser.id,
+    ownerName: currentUser.name,
+    ...fields,
+    updatedAt: baseUpdatedAt,
+    pending,
+  };
+}
+
+function updateNetworkStatus() {
+  if (!navigator.onLine) {
+    updateOfflineStatus(
+      "Sem conexão. Alterações salvas aqui ficam pendentes até você sincronizar.",
+    );
+  } else if (offlineMode) {
+    updateOfflineStatus(
+      "A conexão voltou. Sincronize as alterações para enviá-las ao servidor.",
+    );
+  } else {
+    updateOfflineStatus(
+      "Notas próprias e rascunhos podem ser armazenados neste dispositivo.",
+    );
+  }
+}
+
+async function saveCurrentDraft() {
+  if (!currentUser || !currentClass || !currentNote || !canEdit) return;
+  const isNew = isLocalNote(currentNote.id);
+  const baseUpdatedAt = isNew
+    ? null
+    : currentNote.baseUpdatedAt ?? currentNote.updatedAt;
+  await saveOfflineDraft({
+    noteId: currentNote.id,
+    userId: currentUser.id,
+    userName: currentUser.name,
+    classId: currentClass.id,
+    branchId: branchSelect.value,
+    baseUpdatedAt,
+    fields: currentNoteFields(),
+  });
+  updateOfflineStatus("Rascunho guardado neste dispositivo.");
+}
+
+function scheduleDraftSave() {
+  if (!currentNote || !canEdit || !currentUser || !currentClass) return;
+  if (draftSaveTimer !== null) clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null;
+    void saveCurrentDraft().catch((error) => {
+      updateOfflineStatus(error.message, true);
+    });
+  }, 400);
 }
 
 function updatePreview() {
@@ -92,6 +220,8 @@ function updateSelectedFlashcardStatus() {
   const tooLong = selectedFlashcardText.length > selectedFlashcardAnswer.maxLength;
   createSelectedFlashcardButton.disabled = !currentClass
     || !currentNote
+    || offlineMode
+    || isLocalNote(currentNote.id)
     || !selectedFlashcardText
     || tooLong;
   selectedFlashcardStatus.textContent = tooLong
@@ -107,16 +237,29 @@ function setEditable(editable) {
     field.disabled = !editable;
   }
   document.querySelector("#save-note").disabled = !editable;
-  deleteNoteButton.hidden = !editable || !currentNote;
+  deleteNoteButton.hidden = !editable || !currentNote
+    || offlineMode || isLocalNote(currentNote.id);
   newNoteButton.disabled = !editable;
-  referenceButton.disabled = !editable || !currentNote;
-  attachmentInput.disabled = !editable || !currentNote;
-  uploadAttachmentButton.disabled = !editable || !currentNote;
-  commentBodyInput.disabled = !currentNote;
-  commentForm.querySelector("button[type=submit]").disabled = !currentNote;
+  referenceButton.disabled = !editable || !currentNote || offlineMode
+    || isLocalNote(currentNote.id);
+  attachmentInput.disabled = !editable || !currentNote || offlineMode
+    || isLocalNote(currentNote.id);
+  uploadAttachmentButton.disabled = !editable || !currentNote || offlineMode
+    || isLocalNote(currentNote.id);
+  commentBodyInput.disabled = !currentNote || offlineMode
+    || isLocalNote(currentNote.id);
+  commentForm.querySelector("button[type=submit]").disabled = !currentNote
+    || offlineMode || isLocalNote(currentNote.id);
+  reportNoteButton.hidden = !currentNote || offlineMode
+    || isLocalNote(currentNote.id);
+  updateSelectedFlashcardStatus();
 }
 
 function clearEditor() {
+  if (draftSaveTimer !== null) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
   currentNote = null;
   selectedFlashcardText = "";
   noteForm.reset();
@@ -127,6 +270,8 @@ function clearEditor() {
   commentsList.replaceChildren();
   commentForm.reset();
   clearGraph();
+  conflictPanel.hidden = true;
+  activeConflict = null;
   deleteNoteButton.hidden = true;
   reportNoteButton.hidden = true;
   setEditable(Boolean(currentClass?.ownBranchId)
@@ -181,14 +326,85 @@ async function loadBranchNotes() {
   const branchId = branchSelect.value;
   notesList.replaceChildren();
   if (!currentClass || !branchId) return;
-  const result = await request(
-    `/api/classes/${currentClass.id}/branches/${branchId}/notes?limit=100`,
-  );
-  for (const note of result.notes) {
+  let notes;
+  if (offlineMode) {
+    notes = await listOfflineNotes(
+      currentUser.id,
+      currentClass.id,
+      branchId,
+    );
+  } else {
+    let result;
+    try {
+      result = await request(
+        `/api/classes/${currentClass.id}/branches/${branchId}/notes?limit=100`,
+      );
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      offlineMode = true;
+      notes = await listOfflineNotes(
+        currentUser.id,
+        currentClass.id,
+        branchId,
+      );
+      updateNetworkStatus();
+    }
+    if (result) {
+      notes = result.notes;
+      if (branchId === currentClass.ownBranchId) {
+        let mutations;
+        let drafts;
+        try {
+          await saveOfflineBranchNotes({
+            userId: currentUser.id,
+            userName: currentUser.name,
+            classId: currentClass.id,
+            branchId,
+            notes,
+          });
+          [mutations, drafts] = await Promise.all([
+            listNoteMutations(currentUser.id, currentClass.id),
+            listOfflineNotes(currentUser.id, currentClass.id, branchId),
+          ]);
+        } catch (error) {
+          updateOfflineStatus(
+            `As notas abriram online, mas não foram guardadas offline: ${error.message}`,
+            true,
+          );
+        }
+        if (mutations && drafts) {
+          const pending = new Map(
+            mutations.map((mutation) => [mutation.noteId, mutation]),
+          );
+          const serverIds = new Set(notes.map((note) => note.id));
+          notes = notes.map((note) => {
+            const mutation = pending.get(note.id);
+            return {
+              ...note,
+              ...(mutation ? mutation.fields : {}),
+              pending: Boolean(mutation),
+              conflict: mutation?.conflict,
+            };
+          });
+          for (const localNote of drafts) {
+            if (!serverIds.has(localNote.id)) notes.push(localNote);
+          }
+        }
+      }
+    }
+  }
+  for (const note of notes) {
     const item = document.createElement("li");
     const date = note.lessonDate ? ` · ${note.lessonDate}` : "";
+    const state = note.conflict
+      ? " · Conflito"
+      : note.pending
+        ? " · Pendente"
+        : note.isDraft
+          ? " · Rascunho local"
+          : "";
     item.append(makeButton(
-      `${note.title}${date}`,
+      `${note.title}${date}${state}`,
       "note-button",
       () => selectNote(note.id),
     ));
@@ -199,9 +415,26 @@ async function loadBranchNotes() {
 async function loadMissedLessons() {
   missedList.replaceChildren();
   if (!currentClass) return;
-  const result = await request(
-    `/api/classes/${currentClass.id}/missed-lessons?limit=100`,
-  );
+  if (offlineMode) {
+    const empty = document.createElement("li");
+    empty.textContent = "Sugestões de aulas perdidas ficam disponíveis online.";
+    missedList.append(empty);
+    return;
+  }
+  let result;
+  try {
+    result = await request(
+      `/api/classes/${currentClass.id}/missed-lessons?limit=100`,
+    );
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    offlineMode = true;
+    updateNetworkStatus();
+    const empty = document.createElement("li");
+    empty.textContent = "Sugestões de aulas perdidas ficam disponíveis online.";
+    missedList.append(empty);
+    return;
+  }
   for (const lesson of result.lessons) {
     const item = document.createElement("li");
     const date = document.createElement("strong");
@@ -224,28 +457,180 @@ async function loadMissedLessons() {
   }
 }
 
+function showConflict(mutation) {
+  activeConflict = mutation;
+  conflictPanel.hidden = false;
+  conflictMessage.textContent = (
+    "Sua versão local foi preservada. Escolha a versão do servidor ou salve a sua como uma nova nota."
+  );
+  serverNotePreview.textContent = [
+    mutation.conflict.title,
+    mutation.conflict.lessonDate ?? "Sem data de aula",
+    "",
+    mutation.conflict.body,
+  ].join("\n");
+}
+
+function mutationForNote(kind, noteId, fields, baseUpdatedAt = null) {
+  return {
+    key: offlineNoteKey(currentUser.id, currentClass.id, noteId),
+    kind,
+    noteId,
+    userId: currentUser.id,
+    userName: currentUser.name,
+    classId: currentClass.id,
+    branchId: branchSelect.value,
+    clientId: kind === "create" && isLocalNote(noteId)
+      ? noteId.slice("local-".length)
+      : null,
+    baseUpdatedAt,
+    fields,
+    createdAt: Date.now(),
+    conflict: null,
+  };
+}
+
 async function openNote(noteId) {
-  const result = await request(`/api/classes/${currentClass.id}/notes/${noteId}`);
-  currentNote = result.note;
+  let note;
+  let serverNote = null;
+  let draft = await getOfflineDraft(
+    currentUser.id,
+    currentClass.id,
+    branchSelect.value,
+    noteId,
+  );
+
+  if (isLocalNote(noteId)) {
+    const stored = await getOfflineNote(currentUser.id, currentClass.id, noteId);
+    note = stored ?? (draft ? {
+      id: noteId,
+      branchId: branchSelect.value,
+      ownerId: currentUser.id,
+      ownerName: currentUser.name,
+      updatedAt: null,
+      ...draft.fields,
+    } : null);
+    if (!note) throw new Error("O rascunho local não foi encontrado.");
+  } else if (offlineMode) {
+    note = await getOfflineNote(currentUser.id, currentClass.id, noteId);
+    if (!note) throw new Error("Esta nota não está disponível offline.");
+  } else {
+    try {
+      const result = await request(
+        `/api/classes/${currentClass.id}/notes/${noteId}`,
+      );
+      serverNote = result.note;
+      note = serverNote;
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      offlineMode = true;
+      note = await getOfflineNote(currentUser.id, currentClass.id, noteId);
+      if (!note) throw new Error("Esta nota não está disponível offline.");
+      updateNetworkStatus();
+    }
+  }
+
+  const pending = (await listNoteMutations(currentUser.id, currentClass.id))
+    .find((mutation) => mutation.noteId === noteId);
+  if (pending) {
+    note = {
+      ...note,
+      ...pending.fields,
+      baseUpdatedAt: pending.baseUpdatedAt,
+      pending: true,
+    };
+    if (pending.conflict) showConflict(pending);
+  }
+
+  if (draft) {
+    if (
+      serverNote
+      && draft.baseUpdatedAt
+      && serverNote.updatedAt !== draft.baseUpdatedAt
+    ) {
+      const mutation = mutationForNote(
+        "update",
+        noteId,
+        draft.fields,
+        draft.baseUpdatedAt,
+      );
+      mutation.conflict = serverNote;
+      await saveNoteMutation(mutation);
+      await deleteOfflineDraft(
+        currentUser.id,
+        currentClass.id,
+        branchSelect.value,
+        noteId,
+      );
+      showConflict(mutation);
+      note = {
+        ...serverNote,
+        ...draft.fields,
+        baseUpdatedAt: draft.baseUpdatedAt,
+      };
+    } else {
+      note = {
+        ...note,
+        ...draft.fields,
+        baseUpdatedAt: draft.baseUpdatedAt,
+      };
+    }
+  }
+
+  currentNote = note;
+  if (
+    serverNote
+    && serverNote.ownerId === currentUser.id
+    && currentClass.ownBranchId === branchSelect.value
+  ) {
+    await saveOfflineNote({
+      ...serverNote,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      classId: currentClass.id,
+      branchId: branchSelect.value,
+    });
+  }
   titleInput.value = currentNote.title;
   lessonDateInput.value = currentNote.lessonDate ?? "";
   statusInput.value = currentNote.status;
   bodyInput.value = currentNote.body;
   updatePreview();
   setEditable(currentNote.ownerId === currentUser.id);
-  const [references, graph] = await Promise.all([
-    request(
-      `/api/classes/${currentClass.id}/notes/${currentNote.id}/references?limit=100`,
-    ),
-    request(
-      `/api/classes/${currentClass.id}/graph?noteId=${currentNote.id}&limit=20`,
-    ),
-  ]);
-  renderReferences(references.references);
-  renderGraph(graph);
-  reportNoteButton.hidden = false;
-  await loadCollaboration();
-  showFeedback(`Nota de ${currentNote.ownerName}.`);
+
+  if (offlineMode || isLocalNote(currentNote.id)) {
+    referencesList.replaceChildren();
+    attachmentsList.replaceChildren();
+    commentsList.replaceChildren();
+    clearGraph();
+    showFeedback("Nota local. Comentários, referências e anexos exigem conexão.");
+    return;
+  }
+
+  try {
+    const [references, graph] = await Promise.all([
+      request(
+        `/api/classes/${currentClass.id}/notes/${currentNote.id}/references?limit=100`,
+      ),
+      request(
+        `/api/classes/${currentClass.id}/graph?noteId=${currentNote.id}&limit=20`,
+      ),
+    ]);
+    renderReferences(references.references);
+    renderGraph(graph);
+    await loadCollaboration();
+    showFeedback(`Nota de ${currentNote.ownerName}.`);
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    offlineMode = true;
+    setEditable(currentNote.ownerId === currentUser.id);
+    updateNetworkStatus();
+    referencesList.replaceChildren();
+    attachmentsList.replaceChildren();
+    commentsList.replaceChildren();
+    clearGraph();
+    showFeedback("Conexão perdida. A edição local continua disponível.");
+  }
 }
 
 async function loadCollaboration() {
@@ -490,18 +875,34 @@ async function insertReference() {
 async function loadClass(classId, preferredBranchId) {
   const selectedClass = classes.find((item) => item.id === classId);
   if (!selectedClass) return;
-  const result = await request(`/api/classes/${classId}?limit=100`);
-  const branches = [...result.branches];
-  if (!branches.some((branch) => branch.id === selectedClass.branchId)) {
-    branches.unshift({
-      id: selectedClass.branchId,
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-    });
+  let className = selectedClass.name;
+  let branches = [{
+    id: selectedClass.branchId,
+    ownerId: currentUser.id,
+    ownerName: currentUser.name,
+  }];
+  if (!offlineMode) {
+    try {
+      const result = await request(`/api/classes/${classId}?limit=100`);
+      className = result.class.name;
+      branches = [...result.branches];
+      if (!branches.some((branch) => branch.id === selectedClass.branchId)) {
+        branches.unshift({
+          id: selectedClass.branchId,
+          ownerId: currentUser.id,
+          ownerName: currentUser.name,
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      offlineMode = true;
+      updateNetworkStatus();
+    }
   }
   currentClass = {
     id: classId,
     ownBranchId: selectedClass.branchId,
+    name: className,
   };
   branchSelect.replaceChildren();
   for (const branch of branches) {
@@ -517,7 +918,7 @@ async function loadClass(classId, preferredBranchId) {
   clearEditor();
   updateAddress();
   await Promise.all([loadBranchNotes(), loadMissedLessons()]);
-  showFeedback(`Classe: ${result.class.name}.`);
+  showFeedback(`Classe: ${className}.`);
 }
 
 classSelect.addEventListener("change", async () => {
@@ -540,6 +941,23 @@ branchSelect.addEventListener("change", async () => {
 
 newNoteButton.addEventListener("click", () => {
   clearEditor();
+  try {
+    currentNote = {
+      id: localNoteId(),
+      branchId: branchSelect.value,
+      ownerId: currentUser.id,
+      ownerName: currentUser.name,
+      title: "",
+      body: "",
+      lessonDate: null,
+      status: "draft",
+      updatedAt: null,
+    };
+    setEditable(true);
+    scheduleDraftSave();
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
   titleInput.focus();
   showFeedback("Nova nota.");
 });
@@ -559,7 +977,29 @@ bodyInput.addEventListener("keydown", (event) => {
   }
 });
 
+for (const field of [titleInput, lessonDateInput, statusInput, bodyInput]) {
+  field.addEventListener("input", scheduleDraftSave);
+}
 bodyInput.addEventListener("input", updatePreview);
+noteForm.addEventListener("focusout", (event) => {
+  if (event.relatedTarget?.id === "save-note") return;
+  if (draftSaveTimer !== null) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+    void saveCurrentDraft().catch((error) => {
+      updateOfflineStatus(error.message, true);
+    });
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "hidden" || draftSaveTimer === null) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = null;
+  void saveCurrentDraft().catch((error) => {
+    updateOfflineStatus(error.message, true);
+  });
+});
 
 attachmentForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -611,32 +1051,114 @@ reportNoteButton.addEventListener("click", () => {
 noteForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!canEdit || !currentClass) return;
-  const values = {
-    title: titleInput.value,
-    lessonDate: lessonDateInput.value || null,
-    status: statusInput.value,
-    body: bodyInput.value,
-  };
-  const path = currentNote
-    ? `/api/classes/${currentClass.id}/notes/${currentNote.id}`
-    : `/api/classes/${currentClass.id}/branches/${branchSelect.value}/notes`;
-  try {
-    const result = await request(path, {
-      method: currentNote ? "PATCH" : "POST",
-      body: JSON.stringify(values),
-    });
+  const values = currentNoteFields();
+  const noteId = currentNote?.id ?? localNoteId();
+  const isCreate = isLocalNote(noteId);
+  const baseUpdatedAt = isCreate
+    ? null
+    : currentNote.baseUpdatedAt ?? currentNote.updatedAt;
+  const mutation = mutationForNote(
+    isCreate ? "create" : "update",
+    noteId,
+    values,
+    baseUpdatedAt,
+  );
+  const keepLocally = async (conflict = null) => {
+    mutation.conflict = conflict;
+    await saveNoteMutation(mutation);
+    await saveOfflineNote(offlineNoteRecord(noteId, values, {
+      baseUpdatedAt,
+      pending: true,
+    }));
+    await deleteOfflineDraft(
+      currentUser.id,
+      currentClass.id,
+      branchSelect.value,
+      noteId,
+    );
     currentNote = {
-      ...result.note,
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
+      ...offlineNoteRecord(noteId, values, { baseUpdatedAt, pending: true }),
+      baseUpdatedAt,
     };
     setEditable(true);
-    await Promise.all([loadBranchNotes(), loadMissedLessons()]);
-    updateAddress();
-    showFeedback("Nota salva.");
-  } catch (error) {
-    showFeedback(error.message, true);
+    if (conflict) showConflict(mutation);
+  };
+
+  if (draftSaveTimer !== null) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
   }
+
+  if (offlineMode) {
+    try {
+      await keepLocally();
+      await loadBranchNotes();
+      showFeedback("Nota salva neste dispositivo e aguardando sincronização.");
+      return;
+    } catch (error) {
+      showFeedback(error.message, true);
+      return;
+    }
+  }
+
+  const path = isCreate
+    ? `/api/classes/${currentClass.id}/branches/${branchSelect.value}/notes`
+    : `/api/classes/${currentClass.id}/notes/${noteId}`;
+  let result;
+  try {
+    result = await request(path, {
+      method: isCreate ? "POST" : "PATCH",
+      body: JSON.stringify(isCreate
+        ? { ...values, clientId: noteId.slice("local-".length) }
+        : { ...values, baseUpdatedAt }),
+    });
+  } catch (error) {
+    if (error.status === 409 && error.payload?.codigo === "CONFLITO_NOTA") {
+      try {
+        await keepLocally(error.payload.note);
+        showFeedback("A versão local foi preservada; escolha como resolver o conflito.", true);
+      } catch (storageError) {
+        showFeedback(storageError.message, true);
+      }
+      return;
+    }
+    if (error instanceof TypeError) {
+      offlineMode = true;
+      updateNetworkStatus();
+      try {
+        await keepLocally();
+        await loadBranchNotes();
+        showFeedback("Conexão perdida. Nota salva e aguardando sincronização.");
+      } catch (storageError) {
+        showFeedback(storageError.message, true);
+      }
+      return;
+    }
+    showFeedback(error.message, true);
+    return;
+  }
+
+  currentNote = {
+    ...result.note,
+    ownerId: currentUser.id,
+    ownerName: currentUser.name,
+    baseUpdatedAt: result.note.updatedAt,
+  };
+  try {
+    await completeNoteMutation(mutation, result.note);
+  } catch (error) {
+    setEditable(true);
+    showFeedback(
+      "Nota salva no servidor, mas a cópia offline não foi atualizada.",
+      true,
+    );
+    updateOfflineStatus(error.message, true);
+    return;
+  }
+  setEditable(true);
+  await Promise.all([loadBranchNotes(), loadMissedLessons()]);
+  updateAddress();
+  showFeedback("Nota salva.");
 });
 
 document.addEventListener("selectionchange", updateSelectedFlashcard);
@@ -685,7 +1207,170 @@ deleteNoteButton.addEventListener("click", async () => {
   }
 });
 
+syncNowButton.addEventListener("click", () => {
+  void synchronizePending();
+});
+
+clearOfflineDataButton.addEventListener("click", async () => {
+  if (!window.confirm("Apagar notas, rascunhos e alterações pendentes deste dispositivo?")) {
+    return;
+  }
+  try {
+    await clearOfflineData();
+    clearEditor();
+    notesList.replaceChildren();
+    missedList.replaceChildren();
+    updateOfflineStatus("Os dados offline deste dispositivo foram apagados.");
+  } catch (error) {
+    updateOfflineStatus(error.message, true);
+  }
+});
+
+useServerVersionButton.addEventListener("click", async () => {
+  if (!activeConflict) return;
+  const conflict = activeConflict;
+  const serverNote = conflict.conflict;
+  try {
+    await saveOfflineNote({
+      ...serverNote,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      classId: conflict.classId,
+      branchId: conflict.branchId,
+    });
+    await Promise.all([
+      deleteNoteMutation(conflict.key),
+      deleteOfflineDraft(
+        conflict.userId,
+        conflict.classId,
+        conflict.branchId,
+        conflict.noteId,
+      ),
+      ...(isLocalNote(conflict.noteId)
+        ? [deleteOfflineNote(
+          conflict.userId,
+          conflict.classId,
+          conflict.noteId,
+        )]
+        : []),
+    ]);
+    activeConflict = null;
+    conflictPanel.hidden = true;
+    currentNote = serverNote;
+    titleInput.value = serverNote.title;
+    lessonDateInput.value = serverNote.lessonDate ?? "";
+    statusInput.value = serverNote.status;
+    bodyInput.value = serverNote.body;
+    updatePreview();
+    setEditable(serverNote.ownerId === currentUser.id);
+    await loadBranchNotes();
+    showFeedback("Versão atual do servidor carregada.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+});
+
+saveLocalCopyButton.addEventListener("click", async () => {
+  if (!activeConflict) return;
+  const conflict = activeConflict;
+  const serverNote = conflict.conflict;
+  try {
+    await saveOfflineNote({
+      ...serverNote,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      classId: conflict.classId,
+      branchId: conflict.branchId,
+    });
+    await Promise.all([
+      deleteNoteMutation(conflict.key),
+      deleteOfflineDraft(
+        conflict.userId,
+        conflict.classId,
+        conflict.branchId,
+        conflict.noteId,
+      ),
+      ...(isLocalNote(conflict.noteId)
+        ? [deleteOfflineNote(
+          conflict.userId,
+          conflict.classId,
+          conflict.noteId,
+        )]
+        : []),
+    ]);
+    const newId = localNoteId();
+    const fields = conflict.fields;
+    const copy = offlineNoteRecord(newId, fields, { pending: true });
+    const createMutation = mutationForNote("create", newId, fields);
+    await saveOfflineNote(copy);
+    await saveNoteMutation(createMutation);
+    activeConflict = null;
+    conflictPanel.hidden = true;
+    currentNote = copy;
+    titleInput.value = fields.title;
+    lessonDateInput.value = fields.lessonDate ?? "";
+    statusInput.value = fields.status;
+    bodyInput.value = fields.body;
+    updatePreview();
+    setEditable(true);
+    await loadBranchNotes();
+    showFeedback("Sua versão foi preservada como uma nova nota pendente.");
+    if (navigator.onLine) await synchronizePending({ quiet: true });
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+});
+
+async function synchronizePending({ quiet = false } = {}) {
+  if (!currentUser || syncInProgress) return;
+  if (!navigator.onLine) {
+    offlineMode = true;
+    updateNetworkStatus();
+    return;
+  }
+
+  syncInProgress = true;
+  updateOfflineStatus("Sincronizando alterações...");
+  let result;
+  try {
+    result = await syncPendingNotes(currentUser.id, request);
+    offlineMode = result.interrupted;
+    if (result.conflicts.length > 0) showConflict(result.conflicts[0]);
+    if (!offlineMode) {
+      await loadBranchNotes();
+      await loadMissedLessons();
+    }
+    const syncedCurrent = result.synced.find((item) => (
+      item.localNoteId === currentNote?.id
+      || item.note.id === currentNote?.id
+    ));
+    if (syncedCurrent) await openNote(syncedCurrent.note.id);
+
+    if (result.errors.length > 0) {
+      updateOfflineStatus(result.errors[0].message, true);
+    } else if (result.interrupted) {
+      updateNetworkStatus();
+    } else if (result.synced.length > 0) {
+      updateOfflineStatus(
+        `${result.synced.length} alteração(ões) sincronizada(s).`,
+      );
+    } else if (result.conflicts.length > 0) {
+      updateOfflineStatus("Há conflitos que precisam da sua decisão.", true);
+    } else if (!quiet) {
+      updateOfflineStatus("Não há alterações pendentes.");
+    } else {
+      updateNetworkStatus();
+    }
+  } catch (error) {
+    updateOfflineStatus(error.message, true);
+  } finally {
+    syncInProgress = false;
+    syncNowButton.disabled = !navigator.onLine;
+  }
+}
+
 async function start() {
+  const address = new URL(window.location.href);
   try {
     const [me, classResult] = await Promise.all([
       request("/api/me"),
@@ -693,31 +1378,85 @@ async function start() {
     ]);
     currentUser = me.user;
     classes = classResult.classes;
-    classSelect.replaceChildren();
-    for (const item of classes) {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = item.name;
-      classSelect.append(option);
+    if (offlineStorageAvailable()) {
+      try {
+        await saveOfflineSession({
+          userId: currentUser.id,
+          userName: currentUser.name,
+          classes,
+        });
+      } catch (error) {
+        updateOfflineStatus(
+          `O armazenamento offline não está disponível: ${error.message}`,
+          true,
+        );
+      }
+    } else {
+      updateOfflineStatus("Este navegador não oferece armazenamento offline.", true);
     }
-    if (classes.length === 0) {
-      showFeedback("Entre em uma classe antes de abrir as anotações.");
+  } catch (error) {
+    if (!(error instanceof TypeError)) {
+      showFeedback(error.message, true);
       setEditable(false);
       return;
     }
-    const address = new URL(window.location.href);
-    const requestedClassId = address.searchParams.get("classId");
-    const selectedClass = classes.find((item) => item.id === requestedClassId)
-      ?? classes[0];
-    classSelect.value = selectedClass.id;
+    let cachedSession;
+    try {
+      cachedSession = await getOfflineSession();
+    } catch (storageError) {
+      showFeedback(storageError.message, true);
+      setEditable(false);
+      return;
+    }
+    if (!cachedSession) {
+      showFeedback("Conecte-se para carregar suas classes pela primeira vez.", true);
+      setEditable(false);
+      return;
+    }
+    currentUser = { id: cachedSession.userId, name: cachedSession.userName };
+    classes = cachedSession.classes;
+    offlineMode = true;
+    updateNetworkStatus();
+  }
+
+  classSelect.replaceChildren();
+  for (const item of classes) {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    classSelect.append(option);
+  }
+  if (classes.length === 0) {
+    showFeedback("Entre em uma classe antes de abrir as anotações.");
+    setEditable(false);
+    return;
+  }
+  const requestedClassId = address.searchParams.get("classId");
+  const selectedClass = classes.find((item) => item.id === requestedClassId)
+    ?? classes[0];
+  classSelect.value = selectedClass.id;
+  try {
     await loadClass(
       selectedClass.id,
       address.searchParams.get("branchId"),
     );
+    if (!offlineMode) await synchronizePending({ quiet: true });
   } catch (error) {
     showFeedback(error.message, true);
     setEditable(false);
   }
 }
 
+syncNowButton.disabled = !navigator.onLine;
+window.addEventListener("connection-state-change", () => {
+  if (!navigator.onLine) offlineMode = true;
+  updateNetworkStatus();
+  if (navigator.onLine) void synchronizePending({ quiet: true });
+});
+window.addEventListener("pwa-ready", () => {
+  updateOfflineStatus("App pronto para abrir a casca offline.");
+});
+window.addEventListener("pwa-registration-error", () => {
+  updateOfflineStatus("Não foi possível preparar o modo PWA neste navegador.", true);
+});
 start();

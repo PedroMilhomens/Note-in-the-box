@@ -42,11 +42,20 @@ function validLessonDate(value) {
 
 function validateNoteFields(body, { partial = false } = {}) {
   if (!isRecord(body)) invalidNoteInput();
-  const allowedFields = new Set(["title", "body", "lessonDate", "status"]);
+  const allowedFields = new Set([
+    "title",
+    "body",
+    "lessonDate",
+    "status",
+    ...(partial ? ["baseUpdatedAt"] : []),
+    ...(!partial ? ["clientId"] : []),
+  ]);
   if (Object.keys(body).some((key) => !allowedFields.has(key))) {
     invalidNoteInput();
   }
-  if (partial && Object.keys(body).length === 0) invalidNoteInput();
+  const hasEditableField = ["title", "body", "lessonDate", "status"]
+    .some((key) => Object.hasOwn(body, key));
+  if (partial && !hasEditableField) invalidNoteInput();
 
   const fields = {};
   if (!partial || Object.hasOwn(body, "title")) {
@@ -80,6 +89,22 @@ function validateNoteFields(body, { partial = false } = {}) {
     const status = Object.hasOwn(body, "status") ? body.status : "draft";
     if (!NOTE_STATUSES.has(status)) invalidNoteInput();
     fields.status = status;
+  }
+  if (partial && Object.hasOwn(body, "baseUpdatedAt")) {
+    const updatedAt = body.baseUpdatedAt;
+    if (
+      typeof updatedAt !== "string"
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(updatedAt)
+      || Number.isNaN(Date.parse(updatedAt))
+      || new Date(updatedAt).toISOString() !== updatedAt
+    ) {
+      invalidNoteInput();
+    }
+    fields.baseUpdatedAt = updatedAt;
+  }
+  if (!partial && Object.hasOwn(body, "clientId")) {
+    if (!isUuid(body.clientId)) invalidNoteInput();
+    fields.clientId = body.clientId;
   }
   return fields;
 }
@@ -167,14 +192,23 @@ export function registerNoteRoutes(router, {
       const auth = await exigirMembro(request, pool, params.classId);
       ensureIds(params, params.branchId);
       rateLimiter.consume(clientAddress(request), null);
-      const values = parseNoteInput(await context.readJson());
-      const note = await createNote(pool, {
+      const { clientId, ...values } = parseNoteInput(await context.readJson());
+      const result = await createNote(pool, {
         classId: params.classId,
         branchId: params.branchId,
         userId: auth.user.id,
+        clientId,
         ...values,
       });
-      json(response, 201, { note });
+      if (result.result === "conflict") {
+        json(response, 409, {
+          erro: "a nota foi atualizada em outro lugar",
+          codigo: "CONFLITO_NOTA",
+          note: result.note,
+        });
+        return;
+      }
+      json(response, result.duplicate ? 200 : 201, { note: result.note });
     },
   );
 
@@ -196,14 +230,25 @@ export function registerNoteRoutes(router, {
     async (request, response, params, context) => {
       const auth = await exigirMembro(request, pool, params.classId);
       ensureIds(params, params.noteId);
-      const fields = parseNotePatch(await context.readJson());
-      const note = await updateNote(pool, {
+      const { baseUpdatedAt, ...fields } = parseNotePatch(
+        await context.readJson(),
+      );
+      const result = await updateNote(pool, {
         classId: params.classId,
         noteId: params.noteId,
         userId: auth.user.id,
         fields,
+        baseUpdatedAt,
       });
-      json(response, 200, { note });
+      if (result.result === "conflict") {
+        json(response, 409, {
+          erro: "a nota foi atualizada em outro lugar",
+          codigo: "CONFLITO_NOTA",
+          note: result.note,
+        });
+        return;
+      }
+      json(response, 200, { note: result.note });
     },
   );
 

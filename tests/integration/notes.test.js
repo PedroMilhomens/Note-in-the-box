@@ -78,6 +78,28 @@ test("CRUD de notas cria versões e sugere notas para aulas perdidas", async (co
     },
   );
   assert.equal(peerNoteResponse.status, 201);
+  const peerNote = (await peerNoteResponse.json()).note;
+
+  const foreignClientId = await fetch(
+    `${origin}/api/classes/${createdClass.class.id}/branches/${createdClass.branchId}/notes`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: owner.cookie,
+        origin,
+      },
+      body: JSON.stringify({
+        title: "Colisão fictícia",
+        clientId: peerNote.id,
+      }),
+    },
+  );
+  assert.equal(foreignClientId.status, 404);
+  assert.equal(
+    JSON.stringify(await foreignClientId.json()).includes("Conteúdo fictício da colega"),
+    false,
+  );
 
   const missedBefore = await fetch(`${origin}${api}/missed-lessons`, {
     headers: { cookie: owner.cookie },
@@ -91,6 +113,7 @@ test("CRUD de notas cria versões e sugere notas para aulas perdidas", async (co
   assert.equal(JSON.stringify(missedBody).includes(peer.email), false);
 
   const initialBody = "<img src=x onerror=alert(1)>";
+  const offlineClientId = "d6743b8c-404a-4a46-8fa0-7f4581578f63";
   const createNoteResponse = await fetch(
     `${origin}${api}/branches/${createdClass.branchId}/notes`,
     {
@@ -105,12 +128,59 @@ test("CRUD de notas cria versões e sugere notas para aulas perdidas", async (co
         body: initialBody,
         lessonDate: "2000-01-02",
         status: "draft",
+        clientId: offlineClientId,
       }),
     },
   );
   assert.equal(createNoteResponse.status, 201);
   const createdNote = (await createNoteResponse.json()).note;
+  assert.equal(createdNote.id, offlineClientId);
   assert.equal(createdNote.body, initialBody);
+
+  const retriedCreate = await fetch(
+    `${origin}${api}/branches/${createdClass.branchId}/notes`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: owner.cookie,
+        origin,
+      },
+      body: JSON.stringify({
+        title: "Aula recuperada",
+        body: initialBody,
+        lessonDate: "2000-01-02",
+        status: "draft",
+        clientId: offlineClientId,
+      }),
+    },
+  );
+  assert.equal(retriedCreate.status, 200);
+  assert.equal((await retriedCreate.json()).note.id, createdNote.id);
+
+  const changedRetry = await fetch(
+    `${origin}${api}/branches/${createdClass.branchId}/notes`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: owner.cookie,
+        origin,
+      },
+      body: JSON.stringify({
+        title: "Aula recuperada",
+        body: "Conteúdo local modificado durante a sincronização",
+        lessonDate: "2000-01-02",
+        status: "draft",
+        clientId: offlineClientId,
+      }),
+    },
+  );
+  assert.equal(changedRetry.status, 409);
+  assert.equal(
+    (await changedRetry.json()).note.body,
+    initialBody,
+  );
 
   const versionsAfterCreate = await testPool.query(
     "SELECT body FROM note_versions WHERE note_id = $1 ORDER BY created_at, id",
@@ -134,10 +204,30 @@ test("CRUD de notas cria versões e sugere notas para aulas perdidas", async (co
     body: JSON.stringify({
       body: "Versão atualizada",
       status: "complete",
+      baseUpdatedAt: createdNote.updatedAt,
     }),
   });
   assert.equal(updateResponse.status, 200);
-  assert.equal((await updateResponse.json()).note.body, "Versão atualizada");
+  const updatedNote = (await updateResponse.json()).note;
+  assert.equal(updatedNote.body, "Versão atualizada");
+
+  const staleUpdate = await fetch(`${origin}${api}/notes/${createdNote.id}`, {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      cookie: owner.cookie,
+      origin,
+    },
+    body: JSON.stringify({
+      body: "Versão offline desatualizada",
+      baseUpdatedAt: createdNote.updatedAt,
+    }),
+  });
+  assert.equal(staleUpdate.status, 409);
+  const stalePayload = await staleUpdate.json();
+  assert.equal(stalePayload.codigo, "CONFLITO_NOTA");
+  assert.equal(stalePayload.note.body, "Versão atualizada");
+  assert.equal(stalePayload.note.updatedAt, updatedNote.updatedAt);
 
   const versionsAfterUpdate = await testPool.query(
     "SELECT body FROM note_versions WHERE note_id = $1",

@@ -2,6 +2,7 @@ export async function createNote(pool, {
   classId,
   branchId,
   userId,
+  clientId,
   title,
   body,
   lessonDate,
@@ -27,12 +28,59 @@ export async function createNote(pool, {
       return { result: "forbidden" };
     }
 
+    if (clientId) {
+      const existingResult = await client.query(
+        `SELECT n.id, n.branch_id, b.class_id, b.owner_id,
+                u.name AS owner_name, n.title, n.body,
+                n.lesson_date::text AS lesson_date, n.status,
+                n.updated_at, n.deleted_at
+         FROM notes n
+         JOIN branches b ON b.id = n.branch_id
+         JOIN users u ON u.id = b.owner_id
+         WHERE n.id = $1
+         FOR UPDATE OF n`,
+        [clientId],
+      );
+      const existing = existingResult.rows[0];
+      if (existing) {
+        if (
+          existing.deleted_at
+          || existing.branch_id !== branchId
+          || existing.class_id !== classId
+          || existing.owner_id !== userId
+        ) {
+          await client.query("ROLLBACK");
+          return { result: "not_found" };
+        }
+        const note = {
+          ...mapNote(existing),
+          ownerId: existing.owner_id,
+          ownerName: existing.owner_name,
+        };
+        const sameContent = existing.title === title
+          && existing.body === body
+          && existing.lesson_date === lessonDate
+          && existing.status === status;
+        if (sameContent) {
+          await client.query("COMMIT");
+          return { result: "ok", note, duplicate: true };
+        }
+        await client.query("ROLLBACK");
+        return { result: "conflict", note };
+      }
+    }
+
     const noteResult = await client.query(
-      `INSERT INTO notes (branch_id, title, body, lesson_date, status)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO notes (
+         id, branch_id, title, body, lesson_date, status, updated_at
+       )
+       VALUES (
+         COALESCE($1, gen_random_uuid()),
+         $2, $3, $4, $5, $6, date_trunc('milliseconds', now())
+       )
        RETURNING id, branch_id, title, body,
                  lesson_date::text AS lesson_date, status, updated_at`,
-      [branchId, title, body, lessonDate, status],
+      [clientId ?? null, branchId, title, body, lessonDate, status],
     );
     const note = noteResult.rows[0];
     await client.query(
@@ -102,15 +150,18 @@ export async function updateNote(pool, {
   noteId,
   userId,
   fields,
+  baseUpdatedAt,
 }) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const currentResult = await client.query(
-      `SELECT n.id, n.branch_id, b.owner_id, n.title, n.body,
-              n.lesson_date::text AS lesson_date, n.status
+      `SELECT n.id, n.branch_id, b.owner_id, u.name AS owner_name,
+              n.title, n.body, n.lesson_date::text AS lesson_date,
+              n.status, n.updated_at
        FROM notes n
        JOIN branches b ON b.id = n.branch_id
+       JOIN users u ON u.id = b.owner_id
        WHERE n.id = $1 AND b.class_id = $2 AND n.deleted_at IS NULL
        FOR UPDATE OF n`,
       [noteId, classId],
@@ -124,6 +175,20 @@ export async function updateNote(pool, {
       await client.query("ROLLBACK");
       return { result: "forbidden" };
     }
+    if (
+      baseUpdatedAt
+      && new Date(current.updated_at).toISOString() !== baseUpdatedAt
+    ) {
+      await client.query("ROLLBACK");
+      return {
+        result: "conflict",
+        note: {
+          ...mapNote(current),
+          ownerId: current.owner_id,
+          ownerName: current.owner_name,
+        },
+      };
+    }
 
     const updated = {
       title: fields.title ?? current.title,
@@ -135,7 +200,11 @@ export async function updateNote(pool, {
     };
     const noteResult = await client.query(
       `UPDATE notes
-       SET title = $2, body = $3, lesson_date = $4, status = $5, updated_at = now()
+       SET title = $2, body = $3, lesson_date = $4, status = $5,
+           updated_at = GREATEST(
+             date_trunc('milliseconds', now()),
+             date_trunc('milliseconds', updated_at) + interval '1 millisecond'
+           )
        WHERE id = $1
        RETURNING id, branch_id, title, body,
                  lesson_date::text AS lesson_date, status, updated_at`,

@@ -121,5 +121,15 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - As sessões são privadas do usuário; uma classe associada só é aceita após validação de associação. O endpoint aplica rate limit, valida a entrada e não registra texto de notas ou outros conteúdos.
 - O registro técnico desses dados e as pendências humanas de base legal e retenção estão em [TRATAMENTO-DE-DADOS.md](./TRATAMENTO-DE-DADOS.md).
 
+## Offline e PWA - fase 11
+
+- O manifesto em `/manifest.webmanifest` e o Service Worker disponibilizam a casca e os arquivos estáticos para abertura offline. Somente caminhos estáticos de uma lista fixa são armazenados em cache; requisições `/api/` nunca são interceptadas nem armazenadas.
+- Em `/notes.html`, a branch própria e os rascunhos são mantidos no IndexedDB deste navegador. O app não salva conteúdo de notas de colegas para uso offline, nem usa `localStorage`.
+- Alterações salvas sem conexão entram em uma fila local e são sincronizadas quando a conexão volta ou ao usar “Sincronizar alterações”. Notas criadas offline usam um identificador idempotente para que uma resposta de rede perdida não crie duplicatas.
+- Se a versão do servidor mudou, a sincronização mantém a versão local e mostra a versão do servidor. O usuário pode carregar a versão do servidor ou preservar a edição local como uma nova nota.
+- “Sair” encerra a sessão e limpa IndexedDB e caches do app. “Apagar dados offline deste dispositivo” limpa o armazenamento local sem encerrar a sessão. O modo offline depende do navegador e do dispositivo usados anteriormente para carregar a classe.
+- O Service Worker, quando recebe uma notificação Push, exibe somente uma mensagem genérica; a fase não configura assinatura nem serviço de envio Push.
+- O armazenamento local mantém conteúdo de estudo neste dispositivo; risco de computador compartilhado, base legal e prazo de retenção continuam pendentes de validação `HUMANO`, registrados em [TRATAMENTO-DE-DADOS.md](./TRATAMENTO-DE-DADOS.md).
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

@@ -16,7 +16,7 @@ export async function createNote(pool, values) {
   if (result.result === "forbidden") {
     throw new HttpError(403, "PERMISSAO_NEGADA", "permissão negada");
   }
-  return result.note;
+  return result;
 }
 
 export async function getBranchNotes(pool, classId, branchId, pagination) {
@@ -43,7 +43,7 @@ export async function updateNote(pool, values) {
   if (result.result === "forbidden") {
     throw new HttpError(403, "PERMISSAO_NEGADA", "permissão negada");
   }
-  return result.note;
+  return result;
 }
 
 export async function deleteNote(pool, values) {

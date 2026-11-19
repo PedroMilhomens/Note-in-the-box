@@ -4,8 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#174c73">
   <title>Anotações - Note in the box</title>
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/css/notes.css">
+  <script type="module" src="/js/pwa.js"></script>
   <script type="module" src="/js/notes.js"></script>
 </head>
 <body>
@@ -17,9 +20,39 @@
       <a id="flashcards-link" class="brand" href="/flashcards.html">Flashcards</a>
       <a id="pomodoro-link" class="brand" href="/pomodoro.html">Foco</a>
       <p>Escreva na sua branch e consulte as anotações dos membros da classe.</p>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+      <p id="logout-status" class="feedback" role="status" aria-live="polite"></p>
     </header>
 
     <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+
+    <section class="panel offline-panel" aria-label="Modo offline">
+      <p id="offline-status" role="status" aria-live="polite">
+        Anotações e rascunhos próprios podem ser mantidos neste dispositivo.
+      </p>
+      <div class="actions">
+        <button id="sync-now" type="button">Sincronizar alterações</button>
+        <button id="clear-offline-data" class="secondary" type="button">
+          Apagar dados offline deste dispositivo
+        </button>
+      </div>
+      <p class="muted">
+        Cópias locais ficam somente neste navegador. Sair apaga notas, rascunhos e fila offline.
+      </p>
+    </section>
+
+    <section id="note-conflict" class="panel conflict-panel" aria-labelledby="conflict-title" hidden>
+      <h2 id="conflict-title">Esta nota mudou no servidor</h2>
+      <p id="conflict-message" role="status" aria-live="polite"></p>
+      <h3>Versão atual do servidor</h3>
+      <pre id="server-note-preview" class="note-body"></pre>
+      <div class="actions">
+        <button id="use-server-version" type="button">Usar versão do servidor</button>
+        <button id="save-local-copy" class="secondary" type="button">
+          Salvar minha versão como nova nota
+        </button>
+      </div>
+    </section>
 
     <section class="selection panel" aria-label="Selecionar classe e branch">
       <label for="class-select">Classe</label>
