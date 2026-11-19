@@ -1,0 +1,72 @@
+/* Tokens de design do Note in the box. Fonte única da paleta e da tipografia. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/inter-400.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/fonts/inter-600.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/fonts/space-grotesk-500.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/fonts/space-grotesk-700.ttf") format("truetype");
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Paleta */
+  --cor-fundo: #0f0915;
+  --cor-superficie: #281040;
+  --cor-primaria: #471a73;
+  --cor-borda: #7e688c;
+  --cor-texto: #f4f4f4;
+
+  /* Derivadas (contraste de texto 4.5 para 1 ou mais sobre fundo e superfície) */
+  --cor-texto-suave: #cdbfd8;
+  --cor-primaria-hover: #5a2491;
+  --cor-superficie-alta: #341a52;
+  --cor-foco: #e2c8ff;
+  --cor-erro: #ffb3c0;
+  --cor-erro-fundo: #3d1022;
+  --cor-sucesso: #a6f0c6;
+  --cor-sucesso-fundo: #0f3023;
+
+  /* Tipografia */
+  --fonte-texto: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fonte-titulo: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --texto-pequeno: 0.875rem;
+  --texto-base: 1rem;
+  --texto-grande: 1.25rem;
+  --titulo-2: 1.5rem;
+  --titulo-1: 2rem;
+
+  /* Espaço, forma e alvos de toque */
+  --espaco-1: 0.25rem;
+  --espaco-2: 0.5rem;
+  --espaco-3: 0.75rem;
+  --espaco-4: 1rem;
+  --espaco-5: 1.5rem;
+  --espaco-6: 2rem;
+  --raio: 12px;
+  --raio-pequeno: 8px;
+  --alvo-toque: 44px;
+  --largura-conteudo: 1280px;
+  --sombra: 0 8px 24px rgb(0 0 0 / 35%);
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v1";
+const CACHE_NAME = "note-in-the-box-shell-v2";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -11,6 +11,16 @@ const SHELL_PATHS = [
   "/termos.html",
   "/manifest.webmanifest",
   "/assets/pwa-icon.svg",
+  "/assets/logo-64.png",
+  "/assets/logo-192.png",
+  "/assets/logo-512.png",
+  "/assets/fonts/inter-400.ttf",
+  "/assets/fonts/inter-600.ttf",
+  "/assets/fonts/space-grotesk-500.ttf",
+  "/assets/fonts/space-grotesk-700.ttf",
+  "/css/tokens.css",
+  "/css/base.css",
+  "/css/components.css",
   "/css/notes.css",
   "/css/forum.css",
   "/css/flashcards.css",

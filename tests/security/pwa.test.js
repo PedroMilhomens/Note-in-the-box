@@ -70,7 +70,7 @@ test("service worker serves only a whitelisted static shell path from cache", ()
   return responsePromise.then((response) => {
     assert.equal(response.cached, true);
     assert.deepEqual(cacheCalls, [
-      ["open", "note-in-the-box-shell-v1"],
+      ["open", "note-in-the-box-shell-v2"],
       ["match"],
     ]);
   });
