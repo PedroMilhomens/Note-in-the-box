@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Flashcards - Note in the box</title>
+  <link rel="stylesheet" href="/css/notes.css">
+  <link rel="stylesheet" href="/css/flashcards.css">
+  <script type="module" src="/js/flashcards.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <a class="brand" href="/notes.html">Anotações</a>
+      <h1>Flashcards</h1>
+      <a id="forum-link" class="brand" href="/forum.html">Fórum da classe</a>
+      <p>Revise no seu ritmo. Evite incluir dados pessoais ou conteúdo protegido.</p>
+    </header>
+
+    <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+
+    <section class="selection panel" aria-label="Selecionar classe">
+      <label for="class-select">Classe</label>
+      <select id="class-select"></select>
+      <span id="class-name" class="class-name"></span>
+    </section>
+
+    <section class="panel" aria-labelledby="due-title">
+      <h2 id="due-title">Revisões de hoje</h2>
+      <p id="due-status" aria-live="polite"></p>
+      <ol id="due-list" class="flashcard-list"></ol>
+      <nav class="pagination" aria-label="Paginação das revisões">
+        <button id="due-previous" class="secondary" type="button" disabled>Anterior</button>
+        <span id="due-page">Página 1</span>
+        <button id="due-next" class="secondary" type="button" disabled>Próxima</button>
+      </nav>
+    </section>
+
+    <section class="panel" aria-labelledby="create-title">
+      <h2 id="create-title">Criar flashcard</h2>
+      <p>Para criar a partir de uma nota, selecione um trecho na visualização da nota.</p>
+      <form id="flashcard-form" class="flashcard-form">
+        <label for="question">Pergunta</label>
+        <input id="question" maxlength="500" required>
+        <label for="answer">Resposta</label>
+        <textarea id="answer" rows="4" maxlength="20000" required></textarea>
+        <button id="create-card" type="submit">Criar flashcard</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="all-cards-title">
+      <h2 id="all-cards-title">Cartões da classe</h2>
+      <ul id="cards-list" class="flashcard-list"></ul>
+      <nav class="pagination" aria-label="Paginação dos flashcards">
+        <button id="cards-previous" class="secondary" type="button" disabled>Anterior</button>
+        <span id="cards-page">Página 1</span>
+        <button id="cards-next" class="secondary" type="button" disabled>Próxima</button>
+      </nav>
+    </section>
+
+    <section class="panel" aria-labelledby="performance-title">
+      <h2 id="performance-title">Desempenho dos últimos 7 dias</h2>
+      <p id="weekly-total"></p>
+      <ul id="weekly-list" class="flashcard-list"></ul>
+      <p class="muted">Os dias e contagens usam UTC.</p>
+    </section>
+  </main>
+</body>
+</html>

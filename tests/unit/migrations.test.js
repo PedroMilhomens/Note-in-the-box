@@ -76,6 +76,15 @@ test("migration de fórum adiciona regras sem alterar dados existentes", async (
   assert.match(sql, /ADD COLUMN IF NOT EXISTS rules text NOT NULL DEFAULT ''/);
 });
 
+test("migration de flashcards adiciona índices para revisão individual e desempenho", async () => {
+  const sql = await fs.readFile(
+    new URL("../../db/migrations/004_flashcard_review_indexes.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(sql, /flashcard_reviews_user_card_reviewed_idx/);
+  assert.match(sql, /flashcard_reviews_user_reviewed_idx/);
+});
+
 test("migrator registra migration e não repete migration aplicada", async () => {
   const appliedNames = new Set();
   let transactionDepth = 0;
@@ -132,5 +141,6 @@ test("migrator registra migration e não repete migration aplicada", async () =>
     "001_init.sql",
     "002_complete_table_metadata.sql",
     "003_class_forum_rules.sql",
+    "004_flashcard_review_indexes.sql",
   ]);
 });

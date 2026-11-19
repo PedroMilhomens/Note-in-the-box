@@ -103,5 +103,14 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - O autor pode excluir seu conteúdo e o dono da classe pode moderar tópicos ou respostas de qualquer membro; a exclusão é lógica. A interface em `/forum.html` mostra as regras no topo e oferece denúncia em tópicos e respostas.
 - Todas as rotas do fórum exigem associação à classe; criação de tópicos, respostas e alteração de regras têm limite de tentativas. Conteúdo de usuários é exibido como texto, sem interpretação HTML.
 
+## Flashcards - fase 9
+
+- `GET` e `POST /api/classes/:classId/flashcards` listam (paginado) e criam cartões para a classe; somente membros acessam. Perguntas aceitam até 500 caracteres e respostas até 20.000.
+- `GET /api/classes/:classId/flashcards/due` retorna os cartões ainda não revisados ou já vencidos para o usuário autenticado. Cada membro mantém seu próprio calendário, mesmo quando os cartões são compartilhados na classe.
+- `POST /api/flashcards/:cardId/review` recebe `{ "rating": "errei|dificil|bom|facil" }`; só aceita cartões vencidos ou nunca revisados. `GET /api/classes/:classId/flashcards/performance` resume as contagens pessoais dos últimos sete dias UTC.
+- Intervalos: `errei` reinicia em 10 minutos; `dificil` usa `ceil(1,2 × intervalo anterior)` com mínimo de 1 dia; `bom`, `ceil(2 × intervalo anterior)` com mínimo de 2 dias; `facil`, `ceil(3 × intervalo anterior)` com mínimo de 4 dias. Para o primeiro review, o intervalo anterior é zero e aplicam-se os mínimos.
+- Em `/flashcards.html` é possível criar cartões manualmente, revisar os pendentes e consultar o desempenho. Em `/notes.html`, selecionar um trecho da visualização preenche a resposta e vincula o cartão à nota. O texto selecionado não é colocado na URL nem persistido em armazenamento local.
+- A migration `004_flashcard_review_indexes.sql` adiciona índices ao histórico sem alterar migrations anteriores. Conteúdo de cartão é exibido como texto; o título de nota relacionado só é consultado dentro da mesma classe.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

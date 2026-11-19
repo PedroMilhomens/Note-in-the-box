@@ -14,6 +14,7 @@
       <a class="brand" href="/">Note in the box</a>
       <h1>Anotações</h1>
       <a id="forum-link" class="brand" href="/forum.html">Fórum da classe</a>
+      <a id="flashcards-link" class="brand" href="/flashcards.html">Flashcards</a>
       <p>Escreva na sua branch e consulte as anotações dos membros da classe.</p>
     </header>
 
@@ -75,7 +76,18 @@
 
         <section class="preview" aria-labelledby="preview-title">
           <h3 id="preview-title">Visualização</h3>
+          <p>Selecione um trecho abaixo para usá-lo como resposta de um flashcard.</p>
           <pre id="note-preview" class="note-body"></pre>
+          <form id="selected-flashcard-form" class="inline-form selected-flashcard-form">
+            <label for="selected-flashcard-answer">Trecho selecionado (resposta)</label>
+            <textarea id="selected-flashcard-answer" rows="3" maxlength="20000" readonly></textarea>
+            <p id="selected-flashcard-status" class="muted" role="status" aria-live="polite"></p>
+            <label for="selected-flashcard-question">Pergunta</label>
+            <input id="selected-flashcard-question" maxlength="500" required>
+            <button id="create-selected-flashcard" type="submit" disabled>
+              Criar flashcard do trecho
+            </button>
+          </form>
         </section>
 
         <section class="references" aria-labelledby="references-title">

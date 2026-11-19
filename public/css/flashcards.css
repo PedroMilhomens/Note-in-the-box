@@ -1,0 +1,69 @@
+.page > .panel {
+  margin-bottom: 1rem;
+}
+
+.flashcard-form,
+.flashcard-item {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.flashcard-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flashcard-item {
+  padding: 0.85rem;
+  border: 1px solid #d5dde4;
+  border-radius: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+.flashcard-item h3,
+.flashcard-item p {
+  margin: 0;
+}
+
+.flashcard-answer {
+  padding: 0.75rem;
+  border-left: 3px solid #267356;
+  background: #f3f6f8;
+  white-space: pre-wrap;
+}
+
+.rating-actions,
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rating-actions button {
+  min-width: 6rem;
+}
+
+.page > .panel button {
+  min-height: 44px;
+}
+
+.muted {
+  color: #526170;
+}
+
+.selected-flashcard-form {
+  margin-top: 1rem;
+}
+
+@media (max-width: 42rem) {
+  .rating-actions,
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

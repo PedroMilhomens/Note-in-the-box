@@ -1,6 +1,7 @@
 const classSelect = document.querySelector("#class-select");
 const className = document.querySelector("#class-name");
 const feedback = document.querySelector("#feedback");
+const flashcardsLink = document.querySelector("#flashcards-link");
 const rulesView = document.querySelector("#rules-view");
 const rulesForm = document.querySelector("#rules-form");
 const rulesInput = document.querySelector("#rules-input");
@@ -230,6 +231,9 @@ async function loadClass(classId) {
   const address = new URL(window.location.href);
   address.searchParams.set("classId", classId);
   window.history.replaceState(null, "", address);
+  const flashcardsAddress = new URL("/flashcards.html", window.location.origin);
+  flashcardsAddress.searchParams.set("classId", classId);
+  flashcardsLink.href = flashcardsAddress.href;
   await Promise.all([loadTopics(), loadNoteOptions()]);
   showFeedback(`Fórum da classe ${result.class.name}.`);
 }

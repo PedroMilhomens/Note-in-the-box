@@ -26,6 +26,12 @@ const referenceSelect = document.querySelector("#reference-select");
 const insertReferenceButton = document.querySelector("#insert-reference");
 const noteGraph = document.querySelector("#note-graph");
 const forumLink = document.querySelector("#forum-link");
+const flashcardsLink = document.querySelector("#flashcards-link");
+const selectedFlashcardForm = document.querySelector("#selected-flashcard-form");
+const selectedFlashcardAnswer = document.querySelector("#selected-flashcard-answer");
+const selectedFlashcardStatus = document.querySelector("#selected-flashcard-status");
+const selectedFlashcardQuestion = document.querySelector("#selected-flashcard-question");
+const createSelectedFlashcardButton = document.querySelector("#create-selected-flashcard");
 
 let currentUser = null;
 let classes = [];
@@ -33,6 +39,7 @@ let currentClass = null;
 let currentNote = null;
 let canEdit = false;
 let referenceCandidates = [];
+let selectedFlashcardText = "";
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
@@ -61,6 +68,36 @@ function showFeedback(message, isError = false) {
 
 function updatePreview() {
   preview.textContent = bodyInput.value;
+  selectedFlashcardText = "";
+  selectedFlashcardAnswer.value = "";
+  updateSelectedFlashcardStatus();
+}
+
+function updateSelectedFlashcard() {
+  const selection = window.getSelection();
+  const selectedText = selection?.toString().trim() ?? "";
+  if (!selectedText) return;
+  const isPreviewSelection = selection
+    && selection.anchorNode
+    && preview.contains(selection.anchorNode)
+    && selection.focusNode
+    && preview.contains(selection.focusNode);
+  selectedFlashcardText = isPreviewSelection ? selectedText : "";
+  selectedFlashcardAnswer.value = selectedFlashcardText;
+  updateSelectedFlashcardStatus();
+}
+
+function updateSelectedFlashcardStatus() {
+  const tooLong = selectedFlashcardText.length > selectedFlashcardAnswer.maxLength;
+  createSelectedFlashcardButton.disabled = !currentClass
+    || !currentNote
+    || !selectedFlashcardText
+    || tooLong;
+  selectedFlashcardStatus.textContent = tooLong
+    ? "O trecho selecionado não pode exceder 20.000 caracteres."
+    : selectedFlashcardText
+      ? "Trecho selecionado. Preencha a pergunta para criar o cartão."
+      : "Selecione um trecho na visualização de uma nota.";
 }
 
 function setEditable(editable) {
@@ -80,7 +117,9 @@ function setEditable(editable) {
 
 function clearEditor() {
   currentNote = null;
+  selectedFlashcardText = "";
   noteForm.reset();
+  selectedFlashcardForm.reset();
   updatePreview();
   referencesList.replaceChildren();
   attachmentsList.replaceChildren();
@@ -116,6 +155,9 @@ function updateAddress() {
   const forumAddress = new URL("/forum.html", window.location.origin);
   forumAddress.searchParams.set("classId", currentClass.id);
   forumLink.href = forumAddress.href;
+  const flashcardsAddress = new URL("/flashcards.html", window.location.origin);
+  flashcardsAddress.searchParams.set("classId", currentClass.id);
+  flashcardsLink.href = flashcardsAddress.href;
 }
 
 function makeButton(label, className, onClick) {
@@ -588,6 +630,37 @@ noteForm.addEventListener("submit", async (event) => {
     await Promise.all([loadBranchNotes(), loadMissedLessons()]);
     updateAddress();
     showFeedback("Nota salva.");
+  } catch (error) {
+    showFeedback(error.message, true);
+  }
+});
+
+document.addEventListener("selectionchange", updateSelectedFlashcard);
+
+selectedFlashcardForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (
+    !currentClass
+    || !currentNote
+    || !selectedFlashcardText
+    || selectedFlashcardText.length > selectedFlashcardAnswer.maxLength
+  ) {
+    showFeedback("Selecione um trecho válido na visualização da nota.", true);
+    return;
+  }
+  try {
+    await request(`/api/classes/${currentClass.id}/flashcards`, {
+      method: "POST",
+      body: JSON.stringify({
+        question: selectedFlashcardQuestion.value,
+        answer: selectedFlashcardText,
+        noteId: currentNote.id,
+      }),
+    });
+    selectedFlashcardForm.reset();
+    selectedFlashcardText = "";
+    updateSelectedFlashcardStatus();
+    showFeedback("Flashcard criado. Você já pode revisá-lo na tela de flashcards.");
   } catch (error) {
     showFeedback(error.message, true);
   }
