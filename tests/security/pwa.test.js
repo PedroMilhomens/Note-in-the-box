@@ -75,3 +75,28 @@ test("service worker serves only a whitelisted static shell path from cache", ()
     ]);
   });
 });
+
+test("service worker caches the privacy account page and its assets", async () => {
+  const { handlers } = createWorkerHarness();
+  const paths = [
+    "/meus-dados.html",
+    "/css/meus-dados.css",
+    "/js/meus-dados.js",
+  ];
+  const responses = paths.map((pathname) => new Promise((resolve) => {
+    let intercepted = false;
+    handlers.get("fetch")({
+      request: new Request(`https://app.test${pathname}`),
+      respondWith(response) {
+        intercepted = true;
+        resolve(response);
+      },
+    });
+    assert.equal(intercepted, true);
+  }));
+  assert.deepEqual(await Promise.all(responses), [
+    { cached: true },
+    { cached: true },
+    { cached: true },
+  ]);
+});

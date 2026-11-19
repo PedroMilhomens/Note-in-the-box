@@ -1,0 +1,58 @@
+.account-panel {
+  margin-bottom: 1rem;
+}
+
+.account-form {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 42rem;
+}
+
+.consent-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.consent-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d5dde4;
+}
+
+.consent-list li:last-child {
+  border-bottom: 0;
+}
+
+.consent-description {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.danger-panel {
+  border-color: #9c2525;
+}
+
+.danger-button {
+  background: #8d2424;
+}
+
+.danger-button:hover {
+  background: #701b1b;
+}
+
+.human-pending {
+  color: #435260;
+}
+
+@media (max-width: 42rem) {
+  .consent-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

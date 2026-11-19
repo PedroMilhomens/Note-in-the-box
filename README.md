@@ -131,5 +131,13 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - O Service Worker, quando recebe uma notificação Push, exibe somente uma mensagem genérica; a fase não configura assinatura nem serviço de envio Push.
 - O armazenamento local mantém conteúdo de estudo neste dispositivo; risco de computador compartilhado, base legal e prazo de retenção continuam pendentes de validação `HUMANO`, registrados em [TRATAMENTO-DE-DADOS.md](./TRATAMENTO-DE-DADOS.md).
 
+## Direitos do titular - fase 12
+
+- Em `/meus-dados.html`, uma pessoa autenticada pode consultar e corrigir o perfil, consultar/revogar consentimentos, exportar os próprios dados em JSON e solicitar a exclusão da conta com confirmação explícita.
+- A exportação inclui os dados próprios e anexos enviados pelo titular; não inclui dados de colegas. A exclusão encerra sessões e anonimiza a autoria do conteúdo compartilhado, que pode permanecer disponível à classe como “Usuário removido”. A transferência de propriedade da classe é feita quando necessária.
+- `GET /api/me/consents` lista os consentimentos; `PATCH /api/me/consents` recebe `{ "kind": "termos|privacidade" }` para registrar revogação. `GET /api/me/export` exporta, `PATCH /api/me` corrige perfil e `DELETE /api/me` exige `{ "confirmation": "EXCLUIR" }`. Todas exigem autenticação e as operações de alteração seguem a checagem de origem.
+- A retenção física é manual e exige data de corte explícita (`RETENTION_CUTOFF`) e confirmação (`CONFIRM_RETENTION_CLEANUP=true`): `RETENTION_CUTOFF=AAAA-MM-DDT00:00:00Z CONFIRM_RETENTION_CLEANUP=true npm run retention:cleanup`. O comando exclui contas já anonimizadas antes do corte e seus anexos. **Não execute em produção até a aprovação humana do prazo de retenção.** Não há agendamento automático.
+- Política de privacidade, bases legais, efeitos da revogação, destino do conteúdo compartilhado, prazos, contato do encarregado e procedimento legal de incidentes ainda requerem validação humana (`HUMANO`). Consulte [TRATAMENTO-DE-DADOS.md](./TRATAMENTO-DE-DADOS.md) e [INCIDENTES.md](./INCIDENTES.md); não se afirma conformidade legal.
+
 <br><br>
 *Por enquanto é só! Obrigado por ter lido até aqui! Nos vemos nas próximas atualizações. - Equipe Note in the box.*

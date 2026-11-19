@@ -21,6 +21,7 @@ import { registerNoteCollaborationRoutes } from "./modules/notes/collaboration-r
 import { registerForumRoutes } from "./modules/forum/routes.js";
 import { registerFlashcardRoutes } from "./modules/flashcards/routes.js";
 import { registerPomodoroRoutes } from "./modules/pomodoro/routes.js";
+import { registerPrivacyRoutes } from "./modules/privacy/routes.js";
 
 const config = loadConfig();
 
@@ -179,6 +180,13 @@ export function createServer({
     registerPomodoroRoutes(router, { pool, rateLimiter });
     const resolvedUploadRoot = path.resolve(uploadRoot);
     const resolvedStaticRoot = path.resolve(staticRoot);
+    registerPrivacyRoutes(router, {
+      pool,
+      nodeEnv,
+      uploadRoot: resolvedUploadRoot,
+      staticRoot: resolvedStaticRoot,
+      rateLimiter,
+    });
     if (
       resolvedUploadRoot === resolvedStaticRoot
       || resolvedUploadRoot.startsWith(`${resolvedStaticRoot}${path.sep}`)

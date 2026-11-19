@@ -6,6 +6,7 @@ const SHELL_PATHS = [
   "/forum.html",
   "/flashcards.html",
   "/pomodoro.html",
+  "/meus-dados.html",
   "/privacidade.html",
   "/termos.html",
   "/manifest.webmanifest",
@@ -14,6 +15,7 @@ const SHELL_PATHS = [
   "/css/forum.css",
   "/css/flashcards.css",
   "/css/pomodoro.css",
+  "/css/meus-dados.css",
   "/js/pwa.js",
   "/js/offline-store.js",
   "/js/offline-sync.js",
@@ -23,6 +25,7 @@ const SHELL_PATHS = [
   "/js/pomodoro.js",
   "/js/pomodoro-state.js",
   "/js/pomodoro-worker.js",
+  "/js/meus-dados.js",
 ];
 const SHELL_PATH_SET = new Set(SHELL_PATHS);
 
