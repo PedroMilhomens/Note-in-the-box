@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ApiError, createApi } from "../../public/js/api.js";
+import { ApiError, createApi, ehErroDeRede } from "../../public/js/api.js";
 
 function resposta(status, corpo, tipo = "application/json; charset=utf-8") {
   return new Response(corpo === undefined ? null : JSON.stringify(corpo), {
@@ -69,4 +69,28 @@ test("falha de rede vira ApiError status 0 e corpo inválido não vaza detalhes"
   await assert.rejects(invalido.get("/api/x"), (erro) => (
     erro.status === 500 && !erro.message.includes("stack")
   ));
+});
+
+test("erros HTTP guardam o corpo da resposta (payload) e distinguem falha de rede", async () => {
+  const api = createApi({
+    fetchImpl: async () => resposta(409, { codigo: "CONFLITO_NOTA", erro: "mudou", note: { id: "n1" } }),
+  });
+  await assert.rejects(api.patch("/api/x", {}), (erro) => (
+    erro.status === 409 && erro.payload.note.id === "n1" && !ehErroDeRede(erro)
+  ));
+  const semRede = createApi({ fetchImpl: async () => { throw new TypeError("x"); } });
+  await assert.rejects(semRede.get("/api/x"), (erro) => ehErroDeRede(erro));
+  assert.equal(ehErroDeRede(new TypeError("fetch failed")), true);
+  assert.equal(ehErroDeRede(null), false);
+});
+
+test("upload envia o arquivo bruto com cabeçalhos próprios e sem JSON", async () => {
+  let init;
+  const api = createApi({ fetchImpl: async (_c, i) => { init = i; return resposta(201, { ok: true }); } });
+  const arquivo = new Blob(["abc"], { type: "application/pdf" });
+  await api.upload("/api/classes/c/notes/n/attachments", arquivo, { "content-type": "application/pdf", "x-file-name": "a.pdf" });
+  assert.equal(init.body, arquivo);
+  assert.equal(init.headers["content-type"], "application/pdf");
+  assert.equal(init.headers["x-file-name"], "a.pdf");
+  assert.equal(init.method, "POST");
 });

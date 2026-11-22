@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v7";
+const CACHE_NAME = "note-in-the-box-shell-v8";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -19,6 +19,7 @@ const SHELL_PATHS = [
   "/assets/fonts/space-grotesk-500.ttf",
   "/assets/fonts/space-grotesk-700.ttf",
   "/css/screens.css",
+  "/css/anotacao.css",
   "/css/tokens.css",
   "/css/base.css",
   "/css/components.css",
@@ -43,6 +44,11 @@ const SHELL_PATHS = [
   "/js/components/layout.js",
   "/js/components/placeholder.js",
   "/js/components/toast.js",
+  "/js/components/nota/corpo-view.js",
+  "/js/components/nota/dialogo.js",
+  "/js/components/nota/painel.js",
+  "/js/nota/corpo.js",
+  "/js/nota/modelo.js",
   "/js/views/entrar.js",
   "/js/views/cadastro.js",
   "/js/views/inicio.js",

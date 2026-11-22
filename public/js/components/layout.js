@@ -64,6 +64,13 @@ export function renderLayout(raiz, { pathname, offline, user, classes = [] }) {
   return principal;
 }
 
+// Tela cheia (editor de anotação): sem barra lateral nem navegação inferior.
+export function renderCheio(raiz) {
+  const principal = h("main", { id: "conteudo", class: "app-cheio", tabindex: "-1" });
+  limpar(raiz).append(principal);
+  return principal;
+}
+
 // Páginas públicas (entrar e cadastro): sem navegação, conteúdo centralizado.
 export function renderPublico(raiz) {
   const principal = h("main", { id: "conteudo", class: "conteudo-publico", tabindex: "-1" });

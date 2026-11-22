@@ -1,7 +1,7 @@
 import { createApi } from "./api.js";
 import { createRouter, safeNextPath } from "./router-client.js";
 import { getSessao, setSessao } from "./store.js";
-import { renderLayout, renderPublico } from "./components/layout.js";
+import { renderCheio, renderLayout, renderPublico } from "./components/layout.js";
 import { toast } from "./components/toast.js";
 import { ROTAS } from "./routes.js";
 
@@ -36,11 +36,11 @@ async function carregarSessao() {
   }
 }
 
-function montar({ publica, url, modulo, visao }) {
+function montar({ publica, cheio, url, modulo, visao }) {
   const sessao = getSessao();
   const principal = publica
     ? renderPublico(raiz)
-    : renderLayout(raiz, { pathname: url.pathname, offline: sessao.offline, user: sessao.user, classes: sessao.classes });
+    : cheio ? renderCheio(raiz) : renderLayout(raiz, { pathname: url.pathname, offline: sessao.offline, user: sessao.user, classes: sessao.classes });
   principal.append(visao);
   document.title = `${modulo.titulo ?? TITULO_BASE} · ${TITULO_BASE}`;
   principal.focus({ preventScroll: true });
@@ -76,7 +76,7 @@ async function tratar({ match, url, isStale }) {
     toast,
   });
   if (isStale()) return;
-  montar({ publica: Boolean(match?.rota.publica), url, modulo, visao });
+  montar({ publica: Boolean(match?.rota.publica), cheio: Boolean(match?.rota.cheio), url, modulo, visao });
 }
 
 roteador = createRouter({

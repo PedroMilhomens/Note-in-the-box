@@ -50,7 +50,7 @@ export async function syncPendingNotes(userId, request) {
         result.conflicts.push(conflict);
         continue;
       }
-      if (error instanceof TypeError) {
+      if (error instanceof TypeError || error.status === 0) {
         result.interrupted = true;
         break;
       }
