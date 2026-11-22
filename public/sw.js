@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v6";
+const CACHE_NAME = "note-in-the-box-shell-v7";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -32,8 +32,11 @@ const SHELL_PATHS = [
   "/js/router-client.js",
   "/js/routes.js",
   "/js/store.js",
+  "/js/format.js",
   "/js/auth-validation.js",
+  "/js/components/abas-classe.js",
   "/js/components/auth-form.js",
+  "/js/components/card-classe.js",
   "/js/components/campo.js",
   "/js/components/dom.js",
   "/js/components/icones.js",
@@ -44,7 +47,11 @@ const SHELL_PATHS = [
   "/js/views/cadastro.js",
   "/js/views/inicio.js",
   "/js/views/classes.js",
+  "/js/views/anotacao.js",
+  "/js/views/classe-cartoes.js",
   "/js/views/classe.js",
+  "/js/views/forum.js",
+  "/js/views/membros.js",
   "/js/views/cartoes.js",
   "/js/views/foco.js",
   "/js/views/conta.js",

@@ -158,7 +158,11 @@ export async function getClassDetails(pool, classId, { limit, offset }) {
     [classId, limit, offset],
   );
   const branchesResult = await pool.query(
-    `SELECT b.id, b.owner_id, u.name AS owner_name
+    `SELECT b.id, b.owner_id, u.name AS owner_name,
+            (SELECT count(*)::int FROM notes n
+              WHERE n.branch_id = b.id AND n.deleted_at IS NULL) AS note_count,
+            (SELECT max(n.updated_at) FROM notes n
+              WHERE n.branch_id = b.id AND n.deleted_at IS NULL) AS last_note_at
      FROM branches b
      JOIN users u ON u.id = b.owner_id
      WHERE b.class_id = $1
@@ -179,6 +183,8 @@ export async function getClassDetails(pool, classId, { limit, offset }) {
       id: branch.id,
       ownerId: branch.owner_id,
       ownerName: branch.owner_name,
+      noteCount: branch.note_count,
+      lastNoteAt: branch.last_note_at,
     })),
   };
 }

@@ -94,6 +94,10 @@ test("criar classe, convidar membro e criar uma branch por usuário", async (con
   assert.equal(detailsBody.class.name, "Biologia Fictícia");
   assert.equal(detailsBody.members.length, 2);
   assert.equal(detailsBody.branches.length, 2);
+  for (const branch of detailsBody.branches) {
+    assert.equal(branch.noteCount, 0);
+    assert.equal(branch.lastNoteAt, null);
+  }
   assert.equal(detailsBody.branches.some(
     (branch) => branch.id === joinedBody.branchId,
   ), true);

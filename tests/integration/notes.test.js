@@ -252,6 +252,8 @@ test("CRUD de notas cria versões e sugere notas para aulas perdidas", async (co
   const listBody = await listResponse.json();
   assert.equal(listBody.notes.length, 1);
   assert.equal("body" in listBody.notes[0], false);
+  assert.equal(listBody.notes[0].referenceCount, 0);
+  assert.equal(listBody.notes[0].commentCount, 0);
 
   const deleteResponse = await fetch(`${origin}${api}/notes/${createdNote.id}`, {
     method: "DELETE",

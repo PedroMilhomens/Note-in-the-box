@@ -104,7 +104,11 @@ export async function listBranchNotes(pool, classId, branchId, {
   const result = await pool.query(
     `SELECT n.id, n.branch_id, n.title,
             n.lesson_date::text AS lesson_date, n.status, n.updated_at,
-            u.name AS owner_name
+            u.name AS owner_name,
+            (SELECT count(*)::int FROM note_links l
+              WHERE l.from_note_id = n.id) AS reference_count,
+            (SELECT count(*)::int FROM comments c
+              WHERE c.note_id = n.id AND c.deleted_at IS NULL) AS comment_count
      FROM notes n
      JOIN branches b ON b.id = n.branch_id
      JOIN users u ON u.id = b.owner_id
@@ -123,6 +127,8 @@ export async function listBranchNotes(pool, classId, branchId, {
     status: row.status,
     updatedAt: row.updated_at,
     ownerName: row.owner_name,
+    referenceCount: row.reference_count,
+    commentCount: row.comment_count,
   }));
 }
 
