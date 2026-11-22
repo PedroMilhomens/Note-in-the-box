@@ -12,6 +12,11 @@ export const MENSAGENS_ERRO = {
   DOCUMENTOS_PENDENTES: "O cadastro está temporariamente indisponível. Tente novamente mais tarde.",
   ORIGEM_INVALIDA: "Não foi possível validar a origem da requisição. Recarregue a página.",
   SEM_REDE: "Sem conexão com o servidor. Verifique a internet e tente de novo.",
+  CONVITE_NAO_ENCONTRADO: "Convite não encontrado. Confira o código com quem criou a classe.",
+  CONVITE_INVALIDO: "Código de convite inválido. Ele tem 43 caracteres.",
+  PERMISSAO_NEGADA: "Você não tem permissão para fazer isso.",
+  NAO_ENCONTRADO: "Não encontrado ou sem acesso.",
+  NAO_AUTENTICADO: "Sua sessão expirou. Entre novamente.",
 };
 
 export function mensagemDeErro(codigo) {

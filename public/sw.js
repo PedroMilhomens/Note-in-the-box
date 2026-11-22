@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v4";
+const CACHE_NAME = "note-in-the-box-shell-v6";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -34,7 +34,9 @@ const SHELL_PATHS = [
   "/js/store.js",
   "/js/auth-validation.js",
   "/js/components/auth-form.js",
+  "/js/components/campo.js",
   "/js/components/dom.js",
+  "/js/components/icones.js",
   "/js/components/layout.js",
   "/js/components/placeholder.js",
   "/js/components/toast.js",
@@ -104,14 +106,19 @@ self.addEventListener("fetch", (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cacheKey = new Request(`${self.location.origin}${cachePath}`);
-    const cached = await cache.match(cacheKey);
-    if (cached) return cached;
-
-    const response = await fetch(request);
-    if (response.ok && response.type === "basic") {
-      await cache.put(cacheKey, response.clone());
+    // Rede primeiro, para que alterações apareçam sem trocar a versão do cache;
+    // sem conexão, usa a cópia guardada (abertura offline).
+    try {
+      const response = await fetch(request);
+      if (response.ok && response.type === "basic") {
+        await cache.put(cacheKey, response.clone());
+      }
+      return response;
+    } catch (error) {
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
+      throw error;
     }
-    return response;
   })());
 });
 

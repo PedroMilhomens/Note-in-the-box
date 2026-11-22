@@ -5,10 +5,10 @@ const logoutChannel = "BroadcastChannel" in globalThis
   : null;
 
 function showLogoutStatus(message, isError = false) {
-  const logoutStatus = document.querySelector("#logout-status");
-  if (!logoutStatus) return;
-  logoutStatus.textContent = message;
-  logoutStatus.classList.toggle("error", isError);
+  for (const logoutStatus of document.querySelectorAll("#logout-status, .logout-status")) {
+    logoutStatus.textContent = message;
+    logoutStatus.classList.toggle("error", isError);
+  }
 }
 
 async function logout(logoutButton) {
@@ -49,7 +49,7 @@ async function logout(logoutButton) {
 
 // Delegação: o botão pode ser criado depois (shell do app) ou já existir (páginas antigas).
 document.addEventListener("click", (event) => {
-  const logoutButton = event.target.closest?.("#logout-button");
+  const logoutButton = event.target.closest?.("#logout-button, [data-logout]");
   if (logoutButton) void logout(logoutButton);
 });
 

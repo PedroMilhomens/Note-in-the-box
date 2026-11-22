@@ -100,7 +100,25 @@ export async function isClassMember(pool, classId, userId) {
 export async function listUserClasses(pool, userId, { limit, offset }) {
   const result = await pool.query(
     `SELECT c.id, c.name, c.professor_name, c.rules, c.created_at,
-            cm.role, b.id AS branch_id
+            cm.role, b.id AS branch_id,
+            (SELECT count(*)::int FROM class_members m
+              WHERE m.class_id = c.id) AS member_count,
+            (SELECT count(*)::int FROM branches cb
+              WHERE cb.class_id = c.id) AS branch_count,
+            (SELECT count(*)::int FROM notes n
+              JOIN branches nb ON nb.id = n.branch_id
+              WHERE nb.class_id = c.id AND n.deleted_at IS NULL) AS note_count,
+            (SELECT count(*)::int FROM flashcards f
+              LEFT JOIN LATERAL (
+                SELECT r.next_due_at
+                FROM flashcard_reviews r
+                WHERE r.card_id = f.id AND r.user_id = cm.user_id
+                ORDER BY r.reviewed_at DESC, r.id DESC
+                LIMIT 1
+              ) latest ON true
+              WHERE f.class_id = c.id
+                AND (latest.next_due_at IS NULL OR latest.next_due_at <= now())
+            ) AS due_flashcards
      FROM class_members cm
      JOIN classes c ON c.id = cm.class_id
      JOIN branches b ON b.class_id = c.id AND b.owner_id = cm.user_id
@@ -113,6 +131,10 @@ export async function listUserClasses(pool, userId, { limit, offset }) {
     ...mapClass(row),
     role: row.role,
     branchId: row.branch_id,
+    memberCount: row.member_count,
+    branchCount: row.branch_count,
+    noteCount: row.note_count,
+    dueFlashcards: row.due_flashcards,
   }));
 }
 

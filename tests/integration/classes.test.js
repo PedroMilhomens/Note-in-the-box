@@ -120,6 +120,28 @@ test("criar classe, convidar membro e criar uma branch por usuário", async (con
   assert.equal(ownClassesBody.classes.length, 1);
   assert.equal(ownClassesBody.classes[0].id, createdBody.class.id);
   assert.equal("inviteCode" in ownClassesBody.classes[0], false);
+  assert.equal(ownClassesBody.classes[0].memberCount, 2);
+  assert.equal(ownClassesBody.classes[0].branchCount, 2);
+  assert.equal(ownClassesBody.classes[0].noteCount, 0);
+  assert.equal(ownClassesBody.classes[0].dueFlashcards, 0);
+
+  const card = await fetch(
+    `${origin}/api/classes/${createdBody.class.id}/flashcards`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: student.cookie, origin },
+      body: JSON.stringify({ question: "Pergunta fictícia?", answer: "Resposta fictícia." }),
+    },
+  );
+  assert.equal(card.status, 201);
+  const withCard = await (await fetch(`${origin}/api/classes`, {
+    headers: { cookie: student.cookie },
+  })).json();
+  assert.equal(withCard.classes[0].dueFlashcards, 1);
+  const otherView = await (await fetch(`${origin}/api/classes`, {
+    headers: { cookie: owner.cookie },
+  })).json();
+  assert.equal(otherView.classes[0].dueFlashcards, 1, "cartões compartilhados vencem para cada membro");
 
   const invalidInvite = await fetch(`${origin}/api/classes/join`, {
     method: "POST",

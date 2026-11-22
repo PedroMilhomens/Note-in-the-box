@@ -11,10 +11,11 @@ export const ROTAS = [
   { path: "/conta", nome: "conta", carregar: () => import("./views/conta.js") },
 ];
 
+// Navegação lateral (desktop) e inferior (celular).
 export const NAVEGACAO = [
-  { path: "/inicio", rotulo: "Início" },
-  { path: "/classes", rotulo: "Classes" },
-  { path: "/cartoes", rotulo: "Cartões" },
-  { path: "/foco", rotulo: "Foco" },
-  { path: "/conta", rotulo: "Conta", somenteDesktop: true },
+  { path: "/inicio", rotulo: "Início", icone: "inicio", lateral: true, inferior: true },
+  { path: "/classes", rotulo: "Minhas classes", rotuloCurto: "Classes", icone: "classes", lateral: true, inferior: true },
+  { path: "/cartoes", rotulo: "Flashcards", rotuloCurto: "Cartões", icone: "cartoes", lateral: true, inferior: true },
+  { path: "/foco", rotulo: "Foco", icone: "foco", lateral: true, inferior: false },
+  { path: "/conta", rotulo: "Conta", rotuloCurto: "Perfil", icone: "perfil", lateral: false, inferior: true },
 ];

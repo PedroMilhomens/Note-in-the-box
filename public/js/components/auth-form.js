@@ -1,6 +1,7 @@
 import { mensagemDeErro, validarCadastro, validarLogin } from "../auth-validation.js";
 import { safeNextPath } from "../router-client.js";
 import { setSessao } from "../store.js";
+import { campo, campoSenha } from "./campo.js";
 import { h, svg } from "./dom.js";
 
 const ILUSTRACAO = {
@@ -15,52 +16,6 @@ function ilustracao() {
     ...nos.map(([x, y], i) => (i === 3
       ? [svg("circle", { class: "no-central", cx: x, cy: y, r: 26 }), svg("circle", { class: "no-ponto", cx: x, cy: y, r: 9 })]
       : svg("circle", { cx: x, cy: y, r: i === 0 ? 22 : 20 }))).flat());
-}
-
-function campo({ id, rotulo, tipo = "text", nome, autocomplete, placeholder, maxlength, inputmode, dica }) {
-  const input = h("input", {
-    id, name: nome, type: tipo, autocomplete, placeholder, maxlength, inputmode,
-    autocapitalize: "none", spellcheck: tipo === "text" ? null : "false",
-  });
-  const erro = h("p", { class: "erro", id: `${id}-erro`, hidden: true });
-  const descricoes = [];
-  if (dica) descricoes.push(`${id}-dica`);
-  const raiz = h("div", { class: "campo" },
-    h("label", { for: id }, rotulo),
-    input,
-    dica ? h("p", { class: "ajuda", id: `${id}-dica` }, dica) : null,
-    erro);
-  if (descricoes.length) input.setAttribute("aria-describedby", descricoes.join(" "));
-
-  return {
-    raiz,
-    input,
-    mostrarErro(mensagem) {
-      erro.textContent = mensagem ?? "";
-      erro.hidden = !mensagem;
-      input.toggleAttribute("aria-invalid", Boolean(mensagem));
-      if (mensagem) input.setAttribute("aria-invalid", "true");
-      const ids = [...descricoes, ...(mensagem ? [erro.id] : [])];
-      if (ids.length) input.setAttribute("aria-describedby", ids.join(" "));
-      else input.removeAttribute("aria-describedby");
-    },
-  };
-}
-
-function campoSenha(opcoes) {
-  const base = campo({ ...opcoes, tipo: "password" });
-  const botao = h("button", { class: "btn-texto", type: "button", "aria-pressed": "false", "aria-label": "Mostrar senha" }, "Mostrar");
-  botao.addEventListener("click", () => {
-    const visivel = base.input.type === "password";
-    base.input.type = visivel ? "text" : "password";
-    botao.setAttribute("aria-pressed", String(visivel));
-    botao.setAttribute("aria-label", visivel ? "Ocultar senha" : "Mostrar senha");
-    botao.textContent = visivel ? "Ocultar" : "Mostrar";
-  });
-  const envoltorio = h("div", { class: "campo-senha" });
-  base.input.replaceWith(envoltorio);
-  envoltorio.append(base.input, botao);
-  return base;
 }
 
 function painelMarca() {
@@ -80,7 +35,7 @@ function seletor(modo) {
     h("a", { href: "/cadastro", "aria-current": modo === "cadastro" ? "page" : null }, "Criar conta"));
 }
 
-export function renderAuth({ modo, api, navegar, toast, url }) {
+export function renderAuth({ modo, api, navegar, toast, url, atualizarClasses }) {
   const cadastro = modo === "cadastro";
   const campos = {};
   campos.name = cadastro ? campo({ id: "nome", rotulo: "Nome", nome: "name", autocomplete: "name", placeholder: "Seu nome", maxlength: 100 }) : null;
@@ -185,6 +140,7 @@ export function renderAuth({ modo, api, navegar, toast, url }) {
         password: valores.password,
       }, { semRedirecionar: true });
       setSessao({ user, offline: false });
+      await atualizarClasses?.();
       await navegar(safeNextPath(url.searchParams.get("next")) ?? "/inicio", { replace: true });
     } catch (erro) {
       campos.password.input.value = "";

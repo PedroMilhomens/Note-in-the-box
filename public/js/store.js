@@ -1,5 +1,5 @@
 // Estado de sessão apenas em memória; dados pessoais não são guardados no armazenamento do navegador.
-let estado = { user: null, offline: false };
+let estado = { user: null, offline: false, classes: [] };
 const ouvintes = new Set();
 
 export function getSessao() { return estado; }

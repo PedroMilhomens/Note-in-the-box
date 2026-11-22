@@ -11,17 +11,28 @@ let roteador;
 
 const api = createApi({
   onUnauthorized: () => {
-    setSessao({ user: null });
+    setSessao({ user: null, classes: [] });
     if (roteador) void roteador.navegar("/entrar", { replace: true });
   },
 });
+
+async function atualizarClasses() {
+  try {
+    const { classes } = await api.get("/api/classes?limit=100");
+    setSessao({ classes });
+    return classes;
+  } catch {
+    return getSessao().classes;
+  }
+}
 
 async function carregarSessao() {
   try {
     const { user } = await api.get("/api/me", { semRedirecionar: true });
     setSessao({ user, offline: false });
+    await atualizarClasses();
   } catch (erro) {
-    setSessao({ user: null, offline: erro.status === 0 });
+    setSessao({ user: null, classes: [], offline: erro.status === 0 });
   }
 }
 
@@ -29,7 +40,7 @@ function montar({ publica, url, modulo, visao }) {
   const sessao = getSessao();
   const principal = publica
     ? renderPublico(raiz)
-    : renderLayout(raiz, { pathname: url.pathname, offline: sessao.offline });
+    : renderLayout(raiz, { pathname: url.pathname, offline: sessao.offline, user: sessao.user, classes: sessao.classes });
   principal.append(visao);
   document.title = `${modulo.titulo ?? TITULO_BASE} · ${TITULO_BASE}`;
   principal.focus({ preventScroll: true });
@@ -61,6 +72,7 @@ async function tratar({ match, url, isStale }) {
     api,
     user: sessao.user,
     navegar: roteador.navegar,
+    atualizarClasses,
     toast,
   });
   if (isStale()) return;
