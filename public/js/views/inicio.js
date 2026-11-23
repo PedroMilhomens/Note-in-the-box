@@ -1,3 +1,5 @@
+import { obterTimer } from "../foco/instancia.js";
+import { ROTULO_MODO, formatarTempo } from "../foco/timer.js";
 import { mensagemDeErro } from "../auth-validation.js";
 import { campo } from "../components/campo.js";
 import { cartaoClasse } from "../components/card-classe.js";
@@ -99,14 +101,29 @@ function painelEntrar({ api, navegar, atualizarClasses }) {
   return form;
 }
 
-function cartaoPomodoro() {
-  return h("section", { class: "card card-lateral", "aria-labelledby": "pomodoro-titulo" },
+function cartaoPomodoro(api) {
+  const timer = obterTimer(api);
+  const relogio = h("p", { class: "relogio-previa", role: "timer", "aria-live": "off" });
+  const modo = h("p", { class: "texto-suave" });
+  const botao = h("a", { class: "btn btn-destaque btn-bloco", href: "/foco" });
+  const cartao = h("section", { class: "card card-lateral", "aria-labelledby": "pomodoro-titulo" },
     h("div", { class: "card-lateral-topo" },
       h("h2", { id: "pomodoro-titulo" }, "Pomodoro"),
       h("a", { class: "pilula", href: "/foco" }, "Modo foco")),
-    h("p", { class: "relogio-previa" }, "25:00"),
-    h("p", { class: "texto-suave" }, "Foco de 25 min, pausa de 5 min e pausa longa de 15 min a cada 4 ciclos."),
-    h("a", { class: "btn btn-destaque btn-bloco", href: "/foco" }, "Iniciar foco"));
+    relogio, modo, botao);
+  let visto = false;
+  const desenhar = (e) => {
+    if (cartao.isConnected) visto = true;
+    else if (visto) { desassinar(); return; }
+    relogio.textContent = formatarTempo(e.restanteMs);
+    modo.textContent = e.rodando
+      ? `${ROTULO_MODO[e.modo]} em andamento.`
+      : `Foco de ${e.duracoes.foco} min, pausa de ${e.duracoes.pausa} min e pausa longa de ${e.duracoes.longa} min a cada 4 ciclos.`;
+    botao.textContent = e.rodando ? "Abrir timer" : e.iniciado ? "Retomar foco" : "Iniciar foco";
+  };
+  const desassinar = timer.assinar(desenhar);
+  desenhar(timer.estado());
+  return cartao;
 }
 
 function cartaoRevisao(total) {
@@ -138,7 +155,7 @@ export async function render({ api, user, navegar, atualizarClasses }) {
     subtitulo.textContent = totalRevisar > 0
       ? `Hoje você tem ${plural(totalRevisar, "flashcard", "flashcards")} para revisar.`
       : "Nenhum flashcard para revisar hoje.";
-    lateral.replaceChildren(cartaoPomodoro(), cartaoRevisao(totalRevisar));
+    lateral.replaceChildren(cartaoPomodoro(api), cartaoRevisao(totalRevisar));
   }
 
   async function recarregar() {

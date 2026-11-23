@@ -381,3 +381,31 @@ progress::-moz-progress-bar { background: var(--cor-texto); }
   .cartao-revisao { min-height: 16rem; }
   .revisao-notas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Modo foco */
+.foco { display: grid; gap: var(--espaco-4); max-width: 34rem; margin: 0 auto; justify-items: stretch; }
+.foco-topo { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco-3); }
+.foco-topo h1 { margin: 0; }
+.modo-abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--espaco-2); padding: var(--espaco-2); background: var(--cor-superficie); border-radius: var(--raio); }
+.modo-aba { min-height: var(--alvo-toque); background: transparent; border: 0; border-radius: var(--raio-pequeno); color: var(--cor-texto-suave); font: inherit; font-weight: 600; cursor: pointer; }
+.modo-aba[aria-pressed="true"] { background: var(--cor-primaria); color: var(--cor-texto); }
+.modo-aba:disabled:not([aria-pressed="true"]) { opacity: 0.6; cursor: not-allowed; }
+.relogio-caixa { position: relative; width: min(100%, 22rem); aspect-ratio: 1; margin: 0 auto; }
+.anel { width: 100%; height: 100%; }
+.anel-trilha { fill: none; stroke: var(--cor-superficie); stroke-width: 12; }
+.anel-progresso { fill: none; stroke: var(--cor-texto); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+.relogio-centro { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: var(--espaco-1); }
+.relogio-foco { margin: 0; font-family: var(--fonte-titulo); font-weight: 700; font-size: clamp(3rem, 14vw, 4.5rem); font-variant-numeric: tabular-nums; }
+.ciclo-texto { margin: 0; }
+.ciclo-pontos { display: flex; justify-content: center; gap: var(--espaco-3); }
+.ponto-ciclo { width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 1px solid var(--cor-borda); background: var(--cor-superficie); }
+.ponto-feito { background: var(--cor-texto); border-color: var(--cor-texto); }
+.foco-controles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espaco-3); }
+.estudando { display: grid; padding: var(--espaco-4); background: var(--cor-superficie); border: 1px solid var(--cor-primaria); border-radius: var(--raio); }
+.estudando strong { font-size: var(--texto-grande); }
+.foco-aviso { min-height: 1.5rem; margin: 0; text-align: center; }
+.status-erro { color: var(--cor-erro); }
+.foco-detalhes summary { cursor: pointer; min-height: var(--alvo-toque); display: flex; align-items: center; font-weight: 600; }
+.foco-config { margin-top: var(--espaco-3); }
+.foco-duracoes { display: grid; gap: var(--espaco-2); border: 0; padding: 0; margin: 0; }
+.foco-nota { text-align: center; margin: 0; }
