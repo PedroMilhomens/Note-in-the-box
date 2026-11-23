@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v8";
+const CACHE_NAME = "note-in-the-box-shell-v9";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
@@ -44,6 +44,7 @@ const SHELL_PATHS = [
   "/js/components/layout.js",
   "/js/components/placeholder.js",
   "/js/components/toast.js",
+  "/js/components/denuncia.js",
   "/js/components/nota/corpo-view.js",
   "/js/components/nota/dialogo.js",
   "/js/components/nota/painel.js",
