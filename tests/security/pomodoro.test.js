@@ -130,13 +130,16 @@ test("Pomodoro session logging requires login, valid completion, and class membe
   assert.equal(stored.rows[0].class_id, classId);
   assert.equal(stored.rows[1].class_id, null);
 
-  const timerScript = await fs.readFile(
-    new URL("../../public/js/pomodoro.js", import.meta.url),
+  const lerJs = (arquivo) => fs.readFile(
+    new URL(`../../public/js/${arquivo}`, import.meta.url),
     "utf8",
   );
+  const timerScript = await lerJs("foco/instancia.js");
   assert.match(timerScript, /body: "Seu ciclo de estudo terminou\."/u);
-  assert.doesNotMatch(
-    timerScript,
-    /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval|localStorage|sessionStorage)\b/u,
-  );
+  for (const arquivo of ["foco/instancia.js", "foco/timer.js", "views/foco.js"]) {
+    assert.doesNotMatch(
+      await lerJs(arquivo),
+      /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval|localStorage|sessionStorage)\b/u,
+    );
+  }
 });

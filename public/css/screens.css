@@ -409,3 +409,23 @@ progress::-moz-progress-bar { background: var(--cor-texto); }
 .foco-config { margin-top: var(--espaco-3); }
 .foco-duracoes { display: grid; gap: var(--espaco-2); border: 0; padding: 0; margin: 0; }
 .foco-nota { text-align: center; margin: 0; }
+
+/* Conta */
+.conta { display: grid; gap: var(--espaco-3); }
+.conta h1 { margin: 0; }
+.conta-grade { display: grid; grid-template-columns: minmax(0, 28rem) minmax(0, 1fr); gap: var(--espaco-5); align-items: start; margin-top: var(--espaco-3); }
+.conta-coluna { display: grid; gap: var(--espaco-4); }
+.conta-bloco { display: grid; gap: var(--espaco-3); }
+.conta-bloco h2 { margin: 0; font-size: var(--texto-grande); }
+.conta-bloco p { margin: 0; }
+.conta-bloco .campo { margin-bottom: 0; }
+.conta-bloco .btn { justify-self: start; }
+.lista-consentimentos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-3); }
+.lista-consentimentos li { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco-3); flex-wrap: wrap; }
+.lista-consentimentos li > div { display: grid; }
+.conta-links a { color: var(--cor-foco); }
+.conta-perigo { border-color: var(--cor-erro); }
+
+@media (max-width: 899px) {
+  .conta-grade { grid-template-columns: minmax(0, 1fr); }
+}

@@ -76,7 +76,7 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - `POST` e `GET /api/classes/:classId/branches/:branchId/notes` criam notas na branch própria ou listam as notas de uma branch da classe; listas omitem o corpo.
 - `GET`, `PATCH` e `DELETE /api/classes/:classId/notes/:noteId` leem, salvam e excluem notas. Todos os membros leem; somente o dono da branch pode alterar ou excluir. Cada criação e salvamento registra uma versão do corpo em `note_versions`.
 - `GET /api/classes/:classId/missed-lessons` identifica datas passadas com notas de colegas e sem nota na branch do usuário, sugerindo até cinco notas de colegas por data. A comparação usa as datas disponíveis nas próprias notas, pois ainda não há calendário de aulas.
-- As rotas exigem sessão e associação à classe; um membro que tenta editar nota alheia recebe `403`. O editor em `/notes.html` renderiza conteúdo do usuário com `textContent`.
+- As rotas exigem sessão e associação à classe; um membro que tenta editar nota alheia recebe `403`. O editor em `/classes/:classId/notas/:noteId` renderiza conteúdo do usuário com `textContent`.
 - Listas de notas e aulas aceitam `limit` (1 a 100, padrão 20) e `offset` (0 a 1.000.000).
 
 ## Rede de notas - fase 6
@@ -100,7 +100,7 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - `GET /api/classes/:classId/forum/topics/:topicId/posts` retorna o tópico e respostas; `POST` no mesmo caminho publica uma resposta. As respostas também são paginadas.
 - Tópicos podem referenciar opcionalmente uma nota ativa da mesma classe; referências a outra classe são rejeitadas. `GET /api/classes/:classId/forum/notes` fornece opções paginadas para a interface.
 - `GET /api/classes/:classId` inclui as regras da classe. O dono pode alterá-las com `PATCH /api/classes/:classId/rules` (até 5000 caracteres); outros membros só podem consultá-las.
-- O autor pode excluir seu conteúdo e o dono da classe pode moderar tópicos ou respostas de qualquer membro; a exclusão é lógica. A interface em `/forum.html` mostra as regras no topo e oferece denúncia em tópicos e respostas.
+- O autor pode excluir seu conteúdo e o dono da classe pode moderar tópicos ou respostas de qualquer membro; a exclusão é lógica. A interface em `/classes/:classId/forum` mostra as regras no topo e oferece denúncia em tópicos e respostas.
 - Todas as rotas do fórum exigem associação à classe; criação de tópicos, respostas e alteração de regras têm limite de tentativas. Conteúdo de usuários é exibido como texto, sem interpretação HTML.
 
 ## Flashcards - fase 9
@@ -109,12 +109,12 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - `GET /api/classes/:classId/flashcards/due` retorna os cartões ainda não revisados ou já vencidos para o usuário autenticado. Cada membro mantém seu próprio calendário, mesmo quando os cartões são compartilhados na classe.
 - `POST /api/flashcards/:cardId/review` recebe `{ "rating": "errei|dificil|bom|facil" }`; só aceita cartões vencidos ou nunca revisados. `GET /api/classes/:classId/flashcards/performance` resume as contagens pessoais dos últimos sete dias UTC.
 - Intervalos: `errei` reinicia em 10 minutos; `dificil` usa `ceil(1,2 × intervalo anterior)` com mínimo de 1 dia; `bom`, `ceil(2 × intervalo anterior)` com mínimo de 2 dias; `facil`, `ceil(3 × intervalo anterior)` com mínimo de 4 dias. Para o primeiro review, o intervalo anterior é zero e aplicam-se os mínimos.
-- Em `/flashcards.html` é possível criar cartões manualmente, revisar os pendentes e consultar o desempenho. Em `/notes.html`, selecionar um trecho da visualização preenche a resposta e vincula o cartão à nota. O texto selecionado não é colocado na URL nem persistido em armazenamento local.
+- Em `/classes/:classId/cartoes` (baralhos em `/cartoes`) é possível criar cartões manualmente, revisar os pendentes e consultar o desempenho. No editor de anotação, selecionar um trecho e usar "Criar flashcard" preenche a resposta e vincula o cartão à nota. O texto selecionado não é colocado na URL nem persistido em armazenamento local.
 - A migration `004_flashcard_review_indexes.sql` adiciona índices ao histórico sem alterar migrations anteriores. Conteúdo de cartão é exibido como texto; o título de nota relacionado só é consultado dentro da mesma classe.
 
 ## Pomodoro - fase 10
 
-- `/pomodoro.html` inicia ciclos de foco, pausa curta e pausa longa. Os padrões são 25, 5 e 15 minutos; cada duração pode ser configurada entre 1 e 120 minutos. A pausa longa segue quatro ciclos de foco concluídos.
+- `/foco` inicia ciclos de foco, pausa curta e pausa longa. Os padrões são 25, 5 e 15 minutos; cada duração pode ser configurada entre 1 e 120 minutos. A pausa longa segue quatro ciclos de foco concluídos.
 - O timer usa Web Worker e calcula o restante por prazo absoluto, para não acumular deriva em abas em segundo plano. Sem suporte a Worker, usa uma alternativa que recalcula o tempo restante.
 - Notificações genéricas só podem solicitar permissão após o usuário iniciar o timer; o Wake Lock é tentado somente durante foco e a saída da aba durante foco é avisada pelo Page Visibility. APIs opcionais indisponíveis não impedem o timer.
 - `POST /api/pomodoro/sessions` registra ciclos concluídos para a conta autenticada. `kind` aceita `foco`, `pausa` ou `longa`; `durationS` aceita 60 a 7200 segundos; `startedAt` deve ser ISO UTC e indicar que a duração passou; `classId` pode ser nulo ou apontar para uma classe de que o usuário seja membro. Ciclos incompletos não são gravados.
@@ -124,7 +124,7 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 ## Offline e PWA - fase 11
 
 - O manifesto em `/manifest.webmanifest` e o Service Worker disponibilizam a casca e os arquivos estáticos para abertura offline. Somente caminhos estáticos de uma lista fixa são armazenados em cache; requisições `/api/` nunca são interceptadas nem armazenadas.
-- Em `/notes.html`, a branch própria e os rascunhos são mantidos no IndexedDB deste navegador. O app não salva conteúdo de notas de colegas para uso offline, nem usa `localStorage`.
+- No editor de anotação, a branch própria e os rascunhos são mantidos no IndexedDB deste navegador. O app não salva conteúdo de notas de colegas para uso offline, nem usa `localStorage`.
 - Alterações salvas sem conexão entram em uma fila local e são sincronizadas quando a conexão volta ou ao usar “Sincronizar alterações”. Notas criadas offline usam um identificador idempotente para que uma resposta de rede perdida não crie duplicatas.
 - Se a versão do servidor mudou, a sincronização mantém a versão local e mostra a versão do servidor. O usuário pode carregar a versão do servidor ou preservar a edição local como uma nova nota.
 - “Sair” encerra a sessão e limpa IndexedDB e caches do app. “Apagar dados offline deste dispositivo” limpa o armazenamento local sem encerrar a sessão. O modo offline depende do navegador e do dispositivo usados anteriormente para carregar a classe.
@@ -133,7 +133,7 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 
 ## Direitos do titular - fase 12
 
-- Em `/meus-dados.html`, uma pessoa autenticada pode consultar e corrigir o perfil, consultar/revogar consentimentos, exportar os próprios dados em JSON e solicitar a exclusão da conta com confirmação explícita.
+- Em `/conta`, uma pessoa autenticada pode consultar e corrigir o perfil, consultar/revogar consentimentos, exportar os próprios dados em JSON e solicitar a exclusão da conta com confirmação explícita.
 - A exportação inclui os dados próprios e anexos enviados pelo titular; não inclui dados de colegas. A exclusão encerra sessões e anonimiza a autoria do conteúdo compartilhado, que pode permanecer disponível à classe como “Usuário removido”. A transferência de propriedade da classe é feita quando necessária.
 - `GET /api/me/consents` lista os consentimentos; `PATCH /api/me/consents` recebe `{ "kind": "termos|privacidade" }` para registrar revogação. `GET /api/me/export` exporta, `PATCH /api/me` corrige perfil e `DELETE /api/me` exige `{ "confirmation": "EXCLUIR" }`. Todas exigem autenticação e as operações de alteração seguem a checagem de origem.
 - A retenção física é manual e exige data de corte explícita (`RETENTION_CUTOFF`) e confirmação (`CONFIRM_RETENTION_CLEANUP=true`): `RETENTION_CUTOFF=AAAA-MM-DDT00:00:00Z CONFIRM_RETENTION_CLEANUP=true npm run retention:cleanup`. O comando exclui contas já anonimizadas antes do corte e seus anexos. **Não execute em produção até a aprovação humana do prazo de retenção.** Não há agendamento automático.

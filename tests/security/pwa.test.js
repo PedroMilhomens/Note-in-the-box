@@ -60,7 +60,7 @@ test("service worker serves only a whitelisted static shell path from cache", ()
   let intercepted = false;
   let responsePromise;
   handlers.get("fetch")({
-    request: new Request("https://app.test/notes.html?classId=fake"),
+    request: new Request("https://app.test/privacidade.html?classId=fake"),
     respondWith(response) {
       intercepted = true;
       responsePromise = response;
@@ -70,7 +70,7 @@ test("service worker serves only a whitelisted static shell path from cache", ()
   return responsePromise.then((response) => {
     assert.equal(response.cached, true);
     assert.deepEqual(cacheCalls, [
-      ["open", "note-in-the-box-shell-v11"],
+      ["open", "note-in-the-box-shell-v12"],
       ["match"],
     ]);
   });
@@ -79,9 +79,9 @@ test("service worker serves only a whitelisted static shell path from cache", ()
 test("service worker caches the privacy account page and its assets", async () => {
   const { handlers } = createWorkerHarness();
   const paths = [
-    "/meus-dados.html",
-    "/css/meus-dados.css",
-    "/js/meus-dados.js",
+    "/termos.html",
+    "/css/anotacao.css",
+    "/js/views/conta.js",
   ];
   const responses = paths.map((pathname) => new Promise((resolve) => {
     let intercepted = false;

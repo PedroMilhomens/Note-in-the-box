@@ -214,13 +214,17 @@ test("class flashcards are private to members and track individual review schedu
     2,
   );
 
-  const flashcardsScript = await fs.readFile(
-    new URL("../../public/js/flashcards.js", import.meta.url),
-    "utf8",
+  const telas = await Promise.all(
+    ["views/classe-cartoes.js", "views/cartoes.js"].map((arquivo) => fs.readFile(
+      new URL(`../../public/js/${arquivo}`, import.meta.url),
+      "utf8",
+    )),
   );
-  assert.match(flashcardsScript, /\.textContent\s*=/u);
-  assert.doesNotMatch(
-    flashcardsScript,
-    /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b/u,
-  );
+  for (const tela of telas) {
+    assert.match(tela, /from "\.\.\/components\/dom\.js"/u);
+    assert.doesNotMatch(
+      tela,
+      /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b/u,
+    );
+  }
 });

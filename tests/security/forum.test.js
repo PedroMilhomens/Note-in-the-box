@@ -250,9 +250,10 @@ test("forum class topics, replies, rules, moderation, and reports are scoped", a
   assert.equal(deletedTopicPosts.status, 404);
 
   const forumScript = await fs.readFile(
-    new URL("../../public/js/forum.js", import.meta.url),
+    new URL("../../public/js/views/forum.js", import.meta.url),
     "utf8",
   );
+  assert.match(forumScript, /from "\.\.\/components\/dom\.js"/u);
   assert.match(forumScript, /\.textContent\s*=/u);
   assert.doesNotMatch(
     forumScript,

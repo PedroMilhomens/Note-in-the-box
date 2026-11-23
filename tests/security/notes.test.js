@@ -139,16 +139,23 @@ test("notas respeitam sessão, associação à classe e posse da branch", async 
   );
   assert.equal(wrongClass.status, 404);
 
-  const notesScript = await fs.readFile(
-    new URL("../../public/js/notes.js", import.meta.url),
+  const lerJs = (arquivo) => fs.readFile(
+    new URL(`../../public/js/${arquivo}`, import.meta.url),
     "utf8",
   );
-  assert.match(notesScript, /\.textContent\s*=/u);
-  assert.match(notesScript, /createElementNS/u);
-  assert.ok(notesScript.includes("[[${candidate.title}]]"));
-  assert.doesNotMatch(
-    notesScript,
-    /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b/u,
-  );
+  const notesScript = await lerJs("views/anotacao.js");
+  const arquivosDaNota = [
+    "views/anotacao.js", "components/nota/painel.js", "components/nota/corpo-view.js",
+    "components/nota/dialogo.js", "nota/corpo.js", "nota/modelo.js",
+  ];
+  assert.match(notesScript, /from "\.\.\/components\/dom\.js"/u);
+  assert.match(await lerJs("components/dom.js"), /createElementNS/u);
+  assert.ok(notesScript.includes("[[${alvo.title}]]"));
+  for (const arquivo of arquivosDaNota) {
+    assert.doesNotMatch(
+      await lerJs(arquivo),
+      /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b/u,
+    );
+  }
   assert.equal(memberBranch === created.branchId, false);
 });

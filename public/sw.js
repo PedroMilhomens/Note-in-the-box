@@ -1,12 +1,7 @@
-const CACHE_NAME = "note-in-the-box-shell-v11";
+const CACHE_NAME = "note-in-the-box-shell-v12";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
-  "/notes.html",
-  "/forum.html",
-  "/flashcards.html",
-  "/pomodoro.html",
-  "/meus-dados.html",
   "/privacidade.html",
   "/termos.html",
   "/manifest.webmanifest",
@@ -23,11 +18,6 @@ const SHELL_PATHS = [
   "/css/tokens.css",
   "/css/base.css",
   "/css/components.css",
-  "/css/notes.css",
-  "/css/forum.css",
-  "/css/flashcards.css",
-  "/css/pomodoro.css",
-  "/css/meus-dados.css",
   "/js/app.js",
   "/js/api.js",
   "/js/router-client.js",
@@ -42,7 +32,6 @@ const SHELL_PATHS = [
   "/js/components/dom.js",
   "/js/components/icones.js",
   "/js/components/layout.js",
-  "/js/components/placeholder.js",
   "/js/components/toast.js",
   "/js/components/denuncia.js",
   "/js/foco/timer.js",
@@ -68,13 +57,8 @@ const SHELL_PATHS = [
   "/js/pwa.js",
   "/js/offline-store.js",
   "/js/offline-sync.js",
-  "/js/notes.js",
-  "/js/forum.js",
-  "/js/flashcards.js",
-  "/js/pomodoro.js",
   "/js/pomodoro-state.js",
   "/js/pomodoro-worker.js",
-  "/js/meus-dados.js",
 ];
 // Rotas do app de página única: usam o shell em cache ("/"). Mantida em sincronia com o servidor.
 const APP_ROUTE_PREFIXES = ["/entrar", "/cadastro", "/inicio", "/classes", "/cartoes", "/foco", "/conta"];
@@ -146,5 +130,5 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow("/notes.html"));
+  event.waitUntil(self.clients.openWindow("/foco"));
 });
