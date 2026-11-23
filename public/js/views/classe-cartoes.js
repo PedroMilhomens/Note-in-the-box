@@ -1,7 +1,168 @@
-import { emConstrucao } from "../components/placeholder.js";
+import { mensagemDeErro } from "../auth-validation.js";
+import { cabecalhoClasse } from "../components/abas-classe.js";
+import { h } from "../components/dom.js";
+import { plural } from "../format.js";
 
 export const titulo = "Flashcards";
 
-export function render() {
-  return emConstrucao("Flashcards", "D5", [{ href: "/flashcards.html", rotulo: "Flashcards (versão atual)" }]);
+const enc = encodeURIComponent;
+const NOTAS = [
+  { valor: "errei", rotulo: "Errei" },
+  { valor: "dificil", rotulo: "Difícil" },
+  { valor: "bom", rotulo: "Bom" },
+  { valor: "facil", rotulo: "Fácil" },
+];
+const TAMANHO_FILA = 50;
+
+export async function render({ api, params, toast, atualizarClasses, navegar }) {
+  const { classId } = params;
+  const base = `/api/classes/${enc(classId)}`;
+  let detalhes;
+  let devidos;
+  let todos;
+  let desempenho;
+  try {
+    [detalhes, devidos, todos, desempenho] = await Promise.all([
+      api.get(`${base}?limit=100`),
+      api.get(`${base}/flashcards/due?limit=${TAMANHO_FILA}`),
+      api.get(`${base}/flashcards?limit=100`),
+      api.get(`${base}/flashcards/performance`),
+    ]);
+  } catch (erro) {
+    return h("section", {},
+      h("p", { class: "aviso aviso-erro", role: "alert" }, mensagemDeErro(erro.codigo)),
+      h("a", { class: "btn", href: "/classes" }, "Voltar para Minhas classes"));
+  }
+
+  const fila = [...devidos.cards];
+  const total = fila.length;
+  let indice = 0;
+  let revelada = false;
+  let enviando = false;
+
+  const area = h("section", { class: "revisao", "aria-label": "Revisão de flashcards" });
+  const colunaLateral = h("aside", { class: "revisao-lateral" });
+
+  function desenharRevisao() {
+    if (!total || indice >= total) {
+      area.replaceChildren(h("div", { class: "cartao-revisao cartao-vazio" },
+        h("h2", {}, total ? "Revisão concluída" : "Nada para revisar agora"),
+        h("p", { class: "texto-suave" }, total
+          ? `Você revisou ${plural(total, "cartão", "cartões")} nesta sessão.`
+          : "Crie flashcards a partir das suas anotações ou pelo formulário ao lado.")));
+      return;
+    }
+    const carta = fila[indice];
+    const progresso = h("progress", { class: "revisao-barra", max: total, value: indice, "aria-label": "Progresso da revisão" });
+    const mostrar = h("button", { class: "btn btn-claro", type: "button" }, "Mostrar resposta");
+    const resposta = h("p", { class: "cartao-resposta", hidden: true }, carta.answer);
+    const notas = h("div", { class: "revisao-notas", role: "group", "aria-label": "Como foi?", hidden: true },
+      NOTAS.map((nota, i) => {
+        const botao = h("button", { class: `btn btn-secundario${nota.valor === "bom" ? " btn-marcado" : ""}`, type: "button", "data-nota": nota.valor },
+          h("span", { class: "tecla", "aria-hidden": "true" }, String(i + 1)), nota.rotulo);
+        botao.addEventListener("click", () => avaliar(nota.valor));
+        return botao;
+      }));
+    mostrar.addEventListener("click", revelar);
+    function revelar() {
+      revelada = true;
+      resposta.hidden = false;
+      notas.hidden = false;
+      mostrar.hidden = true;
+      notas.querySelector("[data-nota=bom]").focus();
+    }
+    area.replaceChildren(
+      h("div", { class: "revisao-topo" },
+        h("p", { class: "texto-suave" }, `Cartão ${indice + 1} de ${total}`), progresso),
+      h("div", { class: "cartao-revisao" },
+        carta.noteTitle ? h("span", { class: "pilula pilula-destaque" }, carta.noteTitle) : null,
+        h("span", { class: "cartao-rotulo" }, "Pergunta"),
+        h("h2", { class: "cartao-pergunta" }, carta.question),
+        mostrar, resposta),
+      notas);
+    revelada = false;
+    area.dataset.revelar = "1";
+    area.revelar = revelar;
+  }
+
+  async function avaliar(valor) {
+    if (enviando || !revelada) return;
+    enviando = true;
+    try {
+      await api.post(`/api/flashcards/${enc(fila[indice].id)}/review`, { rating: valor });
+      indice += 1;
+      desenharRevisao();
+      void atualizarClasses?.();
+    } catch (erro) {
+      toast(erro.message, { tipo: "erro" });
+    } finally {
+      enviando = false;
+    }
+  }
+
+  function aoTeclar(evento) {
+    if (!area.isConnected) { document.removeEventListener("keydown", aoTeclar); return; }
+    if (evento.target instanceof HTMLElement && evento.target.closest("input, textarea, select, dialog")) return;
+    if (evento.ctrlKey || evento.metaKey || evento.altKey) return;
+    if (evento.key === " " && !revelada && indice < total) {
+      if (evento.target instanceof HTMLButtonElement) return;
+      evento.preventDefault();
+      area.revelar?.();
+    } else if (revelada && /^[1-4]$/.test(evento.key)) {
+      avaliar(NOTAS[Number(evento.key) - 1].valor);
+    }
+  }
+  document.addEventListener("keydown", aoTeclar);
+
+  // ---- novo flashcard ----
+  const campoPergunta = h("input", { id: "fc-nova-pergunta", type: "text", maxlength: 300, placeholder: "Digite a pergunta" });
+  const campoResposta = h("textarea", { id: "fc-nova-resposta", rows: 3, maxlength: 1000, placeholder: "Digite a resposta" });
+  const salvar = h("button", { class: "btn btn-bloco", type: "submit" }, "Salvar flashcard");
+  const formulario = h("form", { class: "card revisao-form" },
+    h("h2", {}, "Novo flashcard"),
+    h("div", { class: "campo" }, h("label", { for: "fc-nova-pergunta" }, "Pergunta"), campoPergunta),
+    h("div", { class: "campo" }, h("label", { for: "fc-nova-resposta" }, "Resposta"), campoResposta),
+    salvar);
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (!campoPergunta.value.trim() || !campoResposta.value.trim()) {
+      toast("Preencha a pergunta e a resposta.", { tipo: "erro" });
+      return;
+    }
+    salvar.disabled = true;
+    try {
+      await api.post(`${base}/flashcards`, { question: campoPergunta.value, answer: campoResposta.value });
+      toast("Flashcard criado.", { tipo: "sucesso" });
+      void atualizarClasses?.();
+      await navegar(`/classes/${enc(classId)}/cartoes`);
+    } catch (erro) {
+      toast(erro.message, { tipo: "erro" });
+      salvar.disabled = false;
+    }
+  });
+
+  // ---- desempenho da semana ----
+  const somar = (chave) => desempenho.days.reduce((acc, dia) => acc + (dia.ratings?.[chave] ?? 0), 0);
+  const acertos = desempenho.totalReviews ? Math.round(((somar("bom") + somar("facil")) / desempenho.totalReviews) * 100) : null;
+  const cartaoDesempenho = h("section", { class: "card revisao-desempenho", "aria-label": "Desempenho da semana" },
+    h("h2", {}, "Desempenho da semana"),
+    h("div", { class: "desempenho-linha" }, h("span", {}, "Acertos"), h("strong", {}, acertos === null ? "—" : `${acertos}%`)),
+    acertos === null ? null : h("progress", { max: 100, value: acertos, "aria-label": "Percentual de acertos" }),
+    h("div", { class: "desempenho-linha" }, h("span", {}, "Cartões revisados"), h("strong", {}, String(desempenho.totalReviews))));
+
+  const dica = h("p", { class: "dica" }, "Dica: selecione um trecho em qualquer anotação e use “Criar flashcard” no editor.");
+
+  // ---- todos os cartões ----
+  const lista = todos.cards.length
+    ? h("ul", { class: "lista-cartoes" }, todos.cards.map((c) => h("li", { class: "card" },
+      h("strong", {}, c.question), h("span", { class: "texto-suave" }, c.answer))))
+    : h("p", { class: "texto-suave" }, "Esta classe ainda não tem flashcards.");
+  const todosCartoes = h("details", { class: "todos-cartoes" },
+    h("summary", {}, `Todos os cartões (${todos.cards.length})`), lista);
+
+  colunaLateral.append(formulario, cartaoDesempenho, dica);
+  desenharRevisao();
+  return h("section", { class: "revisao-pagina" },
+    cabecalhoClasse(detalhes.class, "cartoes", { alunos: detalhes.members.length }),
+    h("div", { class: "revisao-grade" }, h("div", { class: "revisao-principal" }, area, todosCartoes), colunaLateral));
 }

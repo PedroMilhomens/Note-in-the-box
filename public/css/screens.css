@@ -344,3 +344,40 @@
   .forum:not(.forum-com-topico) .forum-vazio { display: none; }
   .forum-voltar { display: inline-flex; align-items: center; min-height: var(--alvo-toque); }
 }
+
+/* Flashcards: revisão e baralhos */
+.revisao-grade { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--espaco-5); align-items: start; margin-top: var(--espaco-4); }
+.revisao-principal, .revisao-lateral { display: grid; gap: var(--espaco-4); align-content: start; min-width: 0; }
+.revisao { display: grid; gap: var(--espaco-4); }
+.revisao-topo { display: grid; gap: var(--espaco-2); }
+progress { width: 100%; height: 0.5rem; border: 0; border-radius: 999px; background: var(--cor-superficie-alta); accent-color: var(--cor-texto); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--cor-superficie-alta); }
+progress::-webkit-progress-value { background: var(--cor-texto); }
+progress::-moz-progress-bar { background: var(--cor-texto); }
+.cartao-revisao { display: grid; justify-items: center; align-content: center; gap: var(--espaco-3); min-height: 22rem; padding: var(--espaco-5); text-align: center; background: var(--cor-superficie); border: 1px solid var(--cor-primaria); border-radius: var(--raio); }
+.cartao-rotulo { color: var(--cor-texto-suave); font-size: var(--texto-pequeno); letter-spacing: 0.08em; text-transform: uppercase; }
+.cartao-pergunta { margin: 0; font-size: var(--titulo-2); overflow-wrap: anywhere; }
+.cartao-resposta { margin: 0; padding: var(--espaco-3) var(--espaco-4); background: var(--cor-fundo); border-radius: var(--raio-pequeno); white-space: pre-wrap; overflow-wrap: anywhere; }
+.btn-claro { background: var(--cor-texto); color: var(--cor-fundo); border-color: var(--cor-texto); }
+.btn-claro:hover { background: #fff; }
+.revisao-notas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--espaco-3); }
+.btn-marcado { background: var(--cor-primaria); }
+.tecla { opacity: 0.7; margin-right: var(--espaco-2); font-size: var(--texto-pequeno); }
+.cartao-vazio h2 { margin: 0; }
+.revisao-form h2, .revisao-desempenho h2 { margin: 0 0 var(--espaco-3); font-size: var(--texto-grande); }
+.revisao-form textarea { width: 100%; }
+.revisao-desempenho { display: grid; gap: var(--espaco-2); }
+.desempenho-linha { display: flex; justify-content: space-between; }
+.dica { margin: 0; padding: var(--espaco-4); border: 1px dashed var(--cor-borda); border-radius: var(--raio); color: var(--cor-texto-suave); }
+.todos-cartoes summary { cursor: pointer; min-height: var(--alvo-toque); display: flex; align-items: center; font-weight: 600; }
+.lista-cartoes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-2); }
+.lista-cartoes li { display: grid; gap: 2px; padding: var(--espaco-3) var(--espaco-4); }
+.lista-baralhos { list-style: none; margin: var(--espaco-4) 0 0; padding: 0; display: grid; gap: var(--espaco-3); max-width: 36rem; }
+.card-baralho { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco-4); padding: var(--espaco-4) var(--espaco-5); background: var(--cor-superficie); border: 1px solid var(--cor-primaria); border-radius: var(--raio); color: var(--cor-texto); text-decoration: none; }
+.card-baralho:hover { border-color: var(--cor-borda); }
+
+@media (max-width: 899px) {
+  .revisao-grade { grid-template-columns: minmax(0, 1fr); }
+  .cartao-revisao { min-height: 16rem; }
+  .revisao-notas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

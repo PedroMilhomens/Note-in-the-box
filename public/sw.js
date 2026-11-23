@@ -1,4 +1,4 @@
-const CACHE_NAME = "note-in-the-box-shell-v9";
+const CACHE_NAME = "note-in-the-box-shell-v10";
 const CACHE_PREFIX = "note-in-the-box-";
 const SHELL_PATHS = [
   "/",
