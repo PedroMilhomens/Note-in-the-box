@@ -6,8 +6,10 @@ import { exigirMembro } from "./exigir-membro.js";
 import {
   createClass,
   getClass,
+  getClassInviteCode,
   getMyClasses,
   joinClass,
+  regenerateClassInviteCode,
   updateClassRules,
 } from "./service.js";
 
@@ -138,6 +140,19 @@ export function registerClassRoutes(router, {
   router.add("GET", "/api/classes/:classId", async (request, response, params) => {
     await exigirMembro(request, pool, params.classId);
     const result = await getClass(pool, params.classId, getPagination(request));
+    json(response, 200, result);
+  });
+
+  router.add("GET", "/api/classes/:classId/invite-code", async (request, response, params) => {
+    const auth = await exigirMembro(request, pool, params.classId);
+    const result = await getClassInviteCode(pool, params.classId, auth.user.id);
+    json(response, 200, result);
+  });
+
+  router.add("POST", "/api/classes/:classId/regenerate-invite-code", async (request, response, params) => {
+    const auth = await exigirMembro(request, pool, params.classId);
+    rateLimiter.consume(clientAddress(request), auth.user.id);
+    const result = await regenerateClassInviteCode(pool, params.classId, auth.user.id);
     json(response, 200, result);
   });
 

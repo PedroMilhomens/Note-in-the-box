@@ -105,3 +105,151 @@
 .marca { display: inline-flex; align-items: center; gap: var(--espaco-3); color: var(--cor-texto); text-decoration: none; }
 .marca img { width: 40px; height: 40px; border-radius: var(--raio-pequeno); }
 .marca span { font-family: var(--fonte-titulo); font-weight: 700; font-size: var(--texto-grande); }
+
+/* Flashcard flip animation */
+.cartao-revisao {
+  perspective: 1000px;
+  width: 100%;
+  min-height: 12rem;
+}
+
+.cartao-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  border-radius: var(--raio);
+}
+
+.cartao-revisao.virado .cartao-inner {
+  transform: rotateY(180deg);
+}
+
+.cartao-frente,
+.cartao-verso {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: var(--raio);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--espaco-5);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+}
+
+.cartao-verso {
+  transform: rotateY(180deg);
+  background: var(--cor-primaria);
+  color: var(--cor-texto);
+  border-color: var(--cor-primaria-hover);
+}
+
+.cartao-verso .cartao-resposta {
+  font-size: var(--texto-grande);
+  line-height: 1.5;
+}
+
+.cartao-pergunta {
+  font-size: var(--texto-grande);
+  line-height: 1.5;
+  margin: var(--espaco-3) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartao-inner {
+    transition: none;
+  }
+  .cartao-revisao.virado .cartao-inner {
+    transform: rotateY(180deg);
+  }
+}
+
+/* Flashcard list items and actions */
+.cartao-item {
+  display: grid;
+  gap: var(--espaco-3);
+}
+
+.cartao-item > div:first-child {
+  display: grid;
+  gap: var(--espaco-2);
+}
+
+.cartao-acoes {
+  display: flex;
+  gap: var(--espaco-2);
+  justify-content: flex-end;
+  margin-top: var(--espaco-2);
+  padding-top: var(--espaco-3);
+  border-top: 1px solid var(--cor-borda);
+}
+
+.btn-pequeno {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: var(--espaco-1) var(--espaco-3);
+  font-size: var(--texto-pequeno);
+}
+
+.btn-perigo {
+  background: var(--cor-erro-fundo);
+  border-color: var(--cor-erro);
+  color: var(--cor-erro);
+}
+
+.btn-perigo:hover {
+  background: var(--cor-erro);
+  color: var(--cor-texto);
+}
+
+.convite-section {
+  margin-top: var(--espaco-4);
+}
+
+.convite-codigo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  margin: var(--espaco-3) 0;
+  padding: var(--espaco-3);
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+}
+
+.convite-codigo code {
+  flex: 1;
+  font-size: var(--texto-base);
+  word-break: break-all;
+}
+
+.revisao-notas {
+  display: flex;
+  gap: var(--espaco-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--espaco-4);
+}
+
+.revisao-notas .btn {
+  min-width: 5rem;
+}
+
+.tecla {
+  font-family: var(--fonte-titulo);
+  font-size: 1.2em;
+  margin-right: var(--espaco-1);
+}
+
+.cartao-vazio .acoes {
+  display: flex;
+  gap: var(--espaco-2);
+  justify-content: center;
+  margin-top: var(--espaco-4);
+}

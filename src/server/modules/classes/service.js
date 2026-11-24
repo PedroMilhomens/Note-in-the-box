@@ -3,6 +3,8 @@ import { HttpError } from "../../http/errors.js";
 import {
   createClass as createClassRecord,
   getClassDetails,
+  getClassInviteCode as getClassInviteCodeRecord,
+  regenerateClassInviteCode as regenerateClassInviteCodeRecord,
   joinClass as joinClassRecord,
   listUserClasses,
   updateClassRules as updateClassRulesRecord,
@@ -28,6 +30,22 @@ export async function joinClass(pool, { userId, inviteCode }) {
     throw new HttpError(404, "CONVITE_NAO_ENCONTRADO", "convite não encontrado");
   }
   return result;
+}
+
+export async function getClassInviteCode(pool, classId, userId) {
+  const result = await getClassInviteCodeRecord(pool, classId, userId);
+  if (!result) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o responsável pode ver o código");
+  }
+  return { inviteCode: result };
+}
+
+export async function regenerateClassInviteCode(pool, classId, userId) {
+  const result = await regenerateClassInviteCodeRecord(pool, classId, userId);
+  if (!result) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o responsável pode regenerar o código");
+  }
+  return { inviteCode: result };
 }
 
 export async function getMyClasses(pool, userId, pagination) {

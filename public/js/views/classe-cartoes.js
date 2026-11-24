@@ -39,23 +39,37 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
   let indice = 0;
   let revelada = false;
   let enviando = false;
+  let cartaoAtual = null;
 
   const area = h("section", { class: "revisao", "aria-label": "Revisão de flashcards" });
   const colunaLateral = h("aside", { class: "revisao-lateral" });
 
   function desenharRevisao() {
     if (!total || indice >= total) {
+      const botoes = [];
+      if (total) {
+        botoes.push(h("button", {
+          class: "btn btn-secundario",
+          type: "button"
+        }, "Revisar novamente"));
+      }
       area.replaceChildren(h("div", { class: "cartao-revisao cartao-vazio" },
         h("h2", {}, total ? "Revisão concluída" : "Nada para revisar agora"),
         h("p", { class: "texto-suave" }, total
           ? `Você revisou ${plural(total, "cartão", "cartões")} nesta sessão.`
-          : "Crie flashcards a partir das suas anotações ou pelo formulário ao lado.")));
+          : "Crie flashcards a partir das suas anotações ou pelo formulário ao lado."),
+        h("div", { class: "acoes" }, ...botoes)));
+      if (total) {
+        const btnRevisar = area.querySelector("button.btn-secundario");
+        btnRevisar?.addEventListener("click", reiniciarRevisao);
+      }
       return;
     }
     const carta = fila[indice];
+    cartaoAtual = carta;
     const progresso = h("progress", { class: "revisao-barra", max: total, value: indice, "aria-label": "Progresso da revisão" });
     const mostrar = h("button", { class: "btn btn-claro", type: "button" }, "Mostrar resposta");
-    const resposta = h("p", { class: "cartao-resposta", hidden: true }, carta.answer);
+    const resposta = h("p", { class: "cartao-resposta" }, carta.answer);
     const notas = h("div", { class: "revisao-notas", role: "group", "aria-label": "Como foi?", hidden: true },
       NOTAS.map((nota, i) => {
         const botao = h("button", { class: `btn btn-secundario${nota.valor === "bom" ? " btn-marcado" : ""}`, type: "button", "data-nota": nota.valor },
@@ -64,25 +78,42 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
         return botao;
       }));
     mostrar.addEventListener("click", revelar);
+
+    const cartaoFrente = h("div", { class: "cartao-frente" },
+      carta.noteTitle ? h("span", { class: "pilula pilula-destaque" }, carta.noteTitle) : null,
+      h("span", { class: "cartao-rotulo" }, "Pergunta"),
+      h("h2", { class: "cartao-pergunta" }, carta.question),
+      mostrar);
+
+    const cartaoVerso = h("div", { class: "cartao-verso" },
+      h("span", { class: "cartao-rotulo" }, "Resposta"),
+      resposta,
+      notas);
+
+    const cartaoInner = h("div", { class: "cartao-inner" }, cartaoFrente, cartaoVerso);
+    const cartaoRevisao = h("div", { class: "cartao-revisao" }, cartaoInner);
+
     function revelar() {
       revelada = true;
-      resposta.hidden = false;
-      notas.hidden = false;
+      cartaoRevisao.classList.add("virado");
       mostrar.hidden = true;
+      notas.hidden = false;
       notas.querySelector("[data-nota=bom]").focus();
     }
+
     area.replaceChildren(
       h("div", { class: "revisao-topo" },
         h("p", { class: "texto-suave" }, `Cartão ${indice + 1} de ${total}`), progresso),
-      h("div", { class: "cartao-revisao" },
-        carta.noteTitle ? h("span", { class: "pilula pilula-destaque" }, carta.noteTitle) : null,
-        h("span", { class: "cartao-rotulo" }, "Pergunta"),
-        h("h2", { class: "cartao-pergunta" }, carta.question),
-        mostrar, resposta),
+      cartaoRevisao,
       notas);
     revelada = false;
     area.dataset.revelar = "1";
     area.revelar = revelar;
+  }
+
+  function reiniciarRevisao() {
+    indice = 0;
+    desenharRevisao();
   }
 
   async function avaliar(valor) {
@@ -153,12 +184,116 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
   const dica = h("p", { class: "dica" }, "Dica: selecione um trecho em qualquer anotação e use “Criar flashcard” no editor.");
 
   // ---- todos os cartões ----
-  const lista = todos.cards.length
-    ? h("ul", { class: "lista-cartoes" }, todos.cards.map((c) => h("li", { class: "card" },
-      h("strong", {}, c.question), h("span", { class: "texto-suave" }, c.answer))))
+  let listaCartoesAtual = todos.cards;
+
+  function criarItemCartao(c) {
+    const li = h("li", { class: "card cartao-item", "data-id": c.id });
+    const conteudo = h("div", {},
+      h("strong", {}, c.question),
+      h("span", { class: "texto-suave" }, c.answer));
+    const acoes = h("div", { class: "cartao-acoes" },
+      h("button", { class: "btn btn-pequeno btn-secundario", type: "button", "aria-label": "Editar" }, "Editar"),
+      h("button", { class: "btn btn-pequeno btn-perigo", type: "button", "aria-label": "Excluir" }, "Excluir"));
+    li.append(conteudo, acoes);
+
+    // Event listeners
+    const btnEditar = li.querySelector("button[aria-label='Editar']");
+    const btnExcluir = li.querySelector("button[aria-label='Excluir']");
+
+    btnEditar?.addEventListener("click", () => abrirEdicao(c, li, conteudo));
+    btnExcluir?.addEventListener("click", () => excluirCartao(c.id, li));
+
+    return li;
+  }
+
+  async function excluirCartao(cardId, liElement) {
+    if (!confirm("Tem certeza que deseja excluir este flashcard?")) return;
+    try {
+      await api.delete(`/api/flashcards/${enc(cardId)}`);
+      toast("Flashcard excluído.", { tipo: "sucesso" });
+      liElement.remove();
+      void atualizarClasses?.();
+      // Recarregar a lista
+      const { cards } = await api.get(`${base}/flashcards?limit=100`);
+      listaCartoesAtual = cards;
+      // Atualizar contador no summary
+      const details = document.querySelector("details.todos-cartoes");
+      if (details) {
+        const summary = details.querySelector("summary");
+        summary.textContent = `Todos os cartões (${cards.length})`;
+      }
+    } catch (erro) {
+      toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
+    }
+  }
+
+  function abrirEdicao(c, liElement, conteudoElement) {
+    const inputPergunta = h("input", { type: "text", value: c.question, maxlength: 300 });
+    const inputResposta = h("textarea", { rows: 3, maxlength: 1000, value: c.answer });
+    const btnSalvar = h("button", { class: "btn btn-pequeno", type: "button" }, "Salvar");
+    const btnCancelar = h("button", { class: "btn btn-pequeno btn-secundario", type: "button" }, "Cancelar");
+    const acoesEdicao = h("div", { class: "cartao-acoes" }, btnSalvar, btnCancelar);
+
+    conteudoElement.replaceChildren(
+      h("div", { class: "campo" }, h("label", {}, "Pergunta"), inputPergunta),
+      h("div", { class: "campo" }, h("label", {}, "Resposta"), inputResposta),
+      acoesEdicao);
+
+    btnCancelar?.addEventListener("click", () => {
+      conteudoElement.replaceChildren(
+        h("strong", {}, c.question),
+        h("span", { class: "texto-suave" }, c.answer));
+      const acoes = h("div", { class: "cartao-acoes" },
+        h("button", { class: "btn btn-pequeno btn-secundario", type: "button", "aria-label": "Editar" }, "Editar"),
+        h("button", { class: "btn btn-pequeno btn-perigo", type: "button", "aria-label": "Excluir" }, "Excluir"));
+      const btnEditarNovo = acoes.querySelector("button[aria-label='Editar']");
+      const btnExcluirNovo = acoes.querySelector("button[aria-label='Excluir']");
+      btnEditarNovo?.addEventListener("click", () => abrirEdicao(c, liElement, conteudoElement));
+      btnExcluirNovo?.addEventListener("click", () => excluirCartao(c.id, liElement));
+      liElement.querySelector(".cartao-acoes")?.replaceWith(acoes);
+    });
+
+    btnSalvar?.addEventListener("click", async () => {
+      if (!inputPergunta.value.trim() || !inputResposta.value.trim()) {
+        toast("Preencha a pergunta e a resposta.", { tipo: "erro" });
+        return;
+      }
+      btnSalvar.disabled = true;
+      try {
+        await api.patch(`/api/flashcards/${enc(c.id)}`, {
+          question: inputPergunta.value,
+          answer: inputResposta.value
+        });
+        toast("Flashcard atualizado.", { tipo: "sucesso" });
+        c.question = inputPergunta.value;
+        c.answer = inputResposta.value;
+        conteudoElement.replaceChildren(
+          h("strong", {}, c.question),
+          h("span", { class: "texto-suave" }, c.answer));
+        const acoes = h("div", { class: "cartao-acoes" },
+          h("button", { class: "btn btn-pequeno btn-secundario", type: "button", "aria-label": "Editar" }, "Editar"),
+          h("button", { class: "btn btn-pequeno btn-perigo", type: "button", "aria-label": "Excluir" }, "Excluir"));
+        const btnEditarNovo = acoes.querySelector("button[aria-label='Editar']");
+        const btnExcluirNovo = acoes.querySelector("button[aria-label='Excluir']");
+        btnEditarNovo?.addEventListener("click", () => abrirEdicao(c, liElement, conteudoElement));
+        btnExcluirNovo?.addEventListener("click", () => excluirCartao(c.id, liElement));
+        liElement.querySelector(".cartao-acoes")?.replaceWith(acoes);
+        void atualizarClasses?.();
+      } catch (erro) {
+        toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
+      } finally {
+        btnSalvar.disabled = false;
+      }
+    });
+
+    liElement.querySelector(".cartao-acoes")?.replaceWith(acoesEdicao);
+  }
+
+  const lista = listaCartoesAtual.length
+    ? h("ul", { class: "lista-cartoes" }, listaCartoesAtual.map(criarItemCartao))
     : h("p", { class: "texto-suave" }, "Esta classe ainda não tem flashcards.");
   const todosCartoes = h("details", { class: "todos-cartoes" },
-    h("summary", {}, `Todos os cartões (${todos.cards.length})`), lista);
+    h("summary", {}, `Todos os cartões (${listaCartoesAtual.length})`), lista);
 
   colunaLateral.append(formulario, cartaoDesempenho, dica);
   desenharRevisao();

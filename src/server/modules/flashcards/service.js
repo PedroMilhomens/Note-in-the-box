@@ -2,10 +2,12 @@ import { HttpError } from "../../http/errors.js";
 import {
   createFlashcard as createFlashcardRecord,
   createReview,
+  deleteFlashcard as deleteFlashcardRecord,
   getFlashcardClassId as getFlashcardClassIdRecord,
   getWeeklyPerformance as getWeeklyPerformanceRecord,
   listDueFlashcards,
   listFlashcards,
+  updateFlashcard as updateFlashcardRecord,
 } from "./repository.js";
 
 export async function getFlashcards(pool, classId, userId, pagination) {
@@ -26,6 +28,42 @@ export async function createFlashcard(pool, values) {
 
 export async function getFlashcardClassId(pool, cardId) {
   return getFlashcardClassIdRecord(pool, cardId);
+}
+
+export async function updateFlashcard(pool, {
+  cardId,
+  classId,
+  userId,
+  question,
+  answer,
+}) {
+  const card = await updateFlashcardRecord(pool, {
+    cardId,
+    classId,
+    userId,
+    question,
+    answer,
+  });
+  if (!card) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o dono pode editar este flashcard");
+  }
+  return { card };
+}
+
+export async function deleteFlashcard(pool, {
+  cardId,
+  classId,
+  userId,
+}) {
+  const deleted = await deleteFlashcardRecord(pool, {
+    cardId,
+    classId,
+    userId,
+  });
+  if (!deleted) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o dono pode excluir este flashcard");
+  }
+  return { deleted: true };
 }
 
 export async function reviewFlashcard(pool, values) {

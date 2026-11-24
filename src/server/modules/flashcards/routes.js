@@ -7,11 +7,13 @@ import { exigirMembro } from "../classes/exigir-membro.js";
 import { parsePagination } from "../classes/routes.js";
 import {
   createFlashcard,
+  deleteFlashcard,
   getDueFlashcards,
   getFlashcardClassId,
   getFlashcards,
   getWeeklyPerformance,
   reviewFlashcard,
+  updateFlashcard,
 } from "./service.js";
 
 const RATINGS = new Set(["errei", "dificil", "bom", "facil"]);
@@ -165,6 +167,53 @@ export function registerFlashcardRoutes(router, {
         classId,
         userId: auth.user.id,
         rating,
+      }));
+    },
+  );
+
+  router.add(
+    "PATCH",
+    "/api/flashcards/:cardId",
+    async (request, response, params, context) => {
+      const auth = await requireLogin(request, pool);
+      if (!isUuid(params.cardId)) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      const classId = await getFlashcardClassId(pool, params.cardId);
+      if (!classId) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      await exigirMembro(request, pool, classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      const { question, answer } = parseFlashcardInput(await context.readJson());
+      json(response, 200, await updateFlashcard(pool, {
+        cardId: params.cardId,
+        classId,
+        userId: auth.user.id,
+        question,
+        answer,
+      }));
+    },
+  );
+
+  router.add(
+    "DELETE",
+    "/api/flashcards/:cardId",
+    async (request, response, params) => {
+      const auth = await requireLogin(request, pool);
+      if (!isUuid(params.cardId)) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      const classId = await getFlashcardClassId(pool, params.cardId);
+      if (!classId) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      await exigirMembro(request, pool, classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      json(response, 200, await deleteFlashcard(pool, {
+        cardId: params.cardId,
+        classId,
+        userId: auth.user.id,
       }));
     },
   );

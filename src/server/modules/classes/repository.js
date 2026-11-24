@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 export async function createClass(pool, {
   userId,
   name,
@@ -187,6 +189,42 @@ export async function getClassDetails(pool, classId, { limit, offset }) {
       lastNoteAt: branch.last_note_at,
     })),
   };
+}
+
+export async function getClassInviteCode(pool, classId, userId) {
+  const result = await pool.query(
+    `SELECT invite_code
+     FROM classes c
+     WHERE c.id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM class_members cm
+         WHERE cm.class_id = c.id
+           AND cm.user_id = $2
+           AND cm.role = 'owner'
+       )`,
+    [classId, userId],
+  );
+  return result.rows[0]?.invite_code ?? null;
+}
+
+export async function regenerateClassInviteCode(pool, classId, userId) {
+  const inviteCode = randomBytes(32).toString("base64url");
+  const result = await pool.query(
+    `UPDATE classes c
+     SET invite_code = $3
+     WHERE c.id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM class_members cm
+         WHERE cm.class_id = c.id
+           AND cm.user_id = $2
+           AND cm.role = 'owner'
+       )
+     RETURNING invite_code`,
+    [classId, userId, inviteCode],
+  );
+  return result.rows[0]?.invite_code ?? null;
 }
 
 export async function updateClassRules(pool, {

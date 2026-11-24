@@ -104,6 +104,41 @@ export async function getFlashcardClassId(pool, cardId) {
   return result.rows[0]?.class_id ?? null;
 }
 
+export async function updateFlashcard(pool, {
+  cardId,
+  classId,
+  userId,
+  question,
+  answer,
+}) {
+  const result = await pool.query(
+    `UPDATE flashcards f
+     SET question = $3, answer = $4
+     WHERE f.id = $1
+       AND f.class_id = $2
+       AND f.owner_id = $5
+     RETURNING id, class_id, question, answer, note_id, created_at`,
+    [cardId, classId, question, answer, userId],
+  );
+  return result.rows[0] ? mapFlashcard(result.rows[0]) : null;
+}
+
+export async function deleteFlashcard(pool, {
+  cardId,
+  classId,
+  userId,
+}) {
+  const result = await pool.query(
+    `DELETE FROM flashcards
+     WHERE id = $1
+       AND class_id = $2
+       AND owner_id = $3
+     RETURNING id`,
+    [cardId, classId, userId],
+  );
+  return result.rowCount > 0;
+}
+
 export async function createReview(pool, {
   cardId,
   classId,
