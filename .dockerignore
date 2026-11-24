@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Environment files (never copy to image)
+.env
+.env.*
+!.env.docker.example
+
+# Tests
+tests
+
+# Design assets
+preview_pictures
+assets-src
+
+# Agent docs
+AGENTS-MUST-README
+
+# IDE/Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+docker-compose.yml
+docker-compose.override.yml
+.docker
+
+# Misc
+*.md
+!README.md
+*.txt
+!package.json
+!package-lock.json

@@ -1,0 +1,89 @@
+services:
+  # Application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: note-in-the-box-app
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DATABASE_URL=postgresql://nib_user:nib_password@db:5432/nib_prod?sslmode=disable
+      - APP_ORIGIN=http://localhost
+      - TERMS_VERSION=terms-v1
+      - PRIVACY_VERSION=privacy-v1
+      - LEGAL_DOCUMENTS_APPROVED=true
+    env_file:
+      - .env.docker
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - nib-network
+
+  # PostgreSQL database
+  db:
+    image: postgres:16-alpine
+    container_name: note-in-the-box-db
+    environment:
+      - POSTGRES_USER=nib_user
+      - POSTGRES_PASSWORD=nib_password
+      - POSTGRES_DB=nib_prod
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nib_user -d nib_prod"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - nib-network
+    # No published ports by default (internal network only)
+
+  # Test profile - run tests inside container
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: note-in-the-box-test
+    environment:
+      - NODE_ENV=test
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DATABASE_URL=postgresql://nib_user:nib_password@db:5432/nib_prod?sslmode=disable
+      - DATABASE_URL_TEST=postgresql://nib_user:nib_password@db:5432/nib_test?sslmode=disable
+      - APP_ORIGIN=http://localhost
+      - TERMS_VERSION=terms-v1
+      - PRIVACY_VERSION=privacy-v1
+      - LEGAL_DOCUMENTS_APPROVED=true
+    env_file:
+      - .env.docker
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "node scripts/migrate.js --test && npm run verify"
+    profiles:
+      - test
+    networks:
+      - nib-network
+
+volumes:
+  db-data:
+    name: nib-db-data
+  uploads:
+    name: nib-uploads
+
+networks:
+  nib-network:
+    name: nib-network
+    driver: bridge

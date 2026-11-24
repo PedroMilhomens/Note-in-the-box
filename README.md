@@ -37,6 +37,89 @@ Preview do site em [PREVIEW.md](PREVIEW.md).
 - `npm run test:security`: executa testes de segurança.
 - `npm run verify`: executa todos os testes e auditoria de dependências.
 
+## Rodando com Docker
+
+### Pré-requisitos
+
+- Docker Engine 24+
+- Docker Compose v2 (plugin `docker compose`)
+
+### Configuração
+
+1. Copie `.env.docker.example` para `.env.docker`:
+   ```bash
+   cp .env.docker.example .env.docker
+   ```
+2. Edite `.env.docker` e **troque todas as senhas** (`CHANGE_ME`) por valores seguros.
+   - `POSTGRES_PASSWORD`: senha do banco PostgreSQL
+   - `DATABASE_URL` / `DATABASE_URL_TEST`: devem usar a mesma senha
+   - `APP_ORIGIN`: em produção, use `https://seu-dominio.com` (obrigatório HTTPS)
+   - `LEGAL_DOCUMENTS_APPROVED=true` **após** revisão humana dos textos legais
+
+### Subir aplicação (produção)
+
+```bash
+# Sobe app + banco em background
+npm run docker:up
+# ou: docker compose up --build -d
+
+# Ver logs
+npm run docker:logs
+# ou: docker compose logs -f
+
+# Aplicar migrations (necessário na primeira subida)
+npm run docker:migrate
+# ou: docker compose run --rm app node scripts/migrate.js
+```
+
+A aplicação abre em `http://localhost:3000` (ou na porta configurada). O banco **não** expõe porta no host; acesso apenas pela rede interna `nib-network`.
+
+### Parar aplicação
+
+```bash
+npm run docker:down
+# ou: docker compose down
+```
+
+Os volumes nomeados (`nib-db-data`, `nib-uploads`) **persistem** os dados entre `down` e `up`.
+
+### Rodar testes dentro do contêiner
+
+```bash
+npm run docker:test
+# ou: docker compose --profile test up --build --abort-on-container-exit test
+```
+
+Este comando:
+1. Sobe o banco de teste (`nib_test`) no mesmo contêiner `db`
+2. Aplica migrations de teste
+3. Executa `npm run verify` (testes + security + audit)
+4. Encerra ao final (`--abort-on-container-exit`)
+
+### Variáveis de ambiente obrigatórias
+
+| Variável | Descrição | Exemplo produção |
+|---|---|---|
+| `DATABASE_URL` | Conexão PostgreSQL app | `postgresql://user:senha@db:5432/nib_prod?sslmode=require` |
+| `DATABASE_URL_TEST` | Conexão PostgreSQL testes | `postgresql://user:senha@db:5432/nib_test?sslmode=require` |
+| `APP_ORIGIN` | Origem pública HTTPS | `https://app.exemplo.com` |
+| `POSTGRES_PASSWORD` | Senha do banco (db service) | `senha-segura-aleatoria` |
+| `LEGAL_DOCUMENTS_APPROVED` | `true` após revisão legal | `true` |
+
+> **Segurança**: Nunca comite `.env.docker`. Use segredos do orquestrador (Docker Swarm secrets, Kubernetes secrets, GitHub Actions secrets) em produção.
+
+### Imagens base
+
+- `node:22-alpine` — runtime da aplicação (multi-stage, `--omit=dev`, usuário `nodejs` não-root)
+- `postgres:16-alpine` — banco de dados (usuário `nib_user` sem SUPERUSER)
+- `dumb-init` — init system para tratamento de sinais (instalado via `apk`)
+
+Consulte `DEPENDENCIAS.md` para detalhes de versões e licenças.
+
+### Healthcheck
+
+O contêiner `app` expõe `HEALTHCHECK` em `GET /api/saude` (intervalo 30s, timeout 3s). O `docker compose ps` mostra `healthy` quando a rota responde 200.
+
 ## Banco de dados
 
 - Configure `DATABASE_URL` no `.env` para o PostgreSQL de desenvolvimento.
