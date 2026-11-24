@@ -68,7 +68,6 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
     const carta = fila[indice];
     cartaoAtual = carta;
     const progresso = h("progress", { class: "revisao-barra", max: total, value: indice, "aria-label": "Progresso da revisão" });
-    const mostrar = h("button", { class: "btn btn-claro", type: "button" }, "Mostrar resposta");
     const resposta = h("p", { class: "cartao-resposta" }, carta.answer);
     const notas = h("div", { class: "revisao-notas", role: "group", "aria-label": "Como foi?", hidden: true },
       NOTAS.map((nota, i) => {
@@ -77,29 +76,54 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
         botao.addEventListener("click", () => avaliar(nota.valor));
         return botao;
       }));
-    mostrar.addEventListener("click", revelar);
+    // Botão para resetar revisão deste cartão
+    const btnResetar = h("button", { class: "btn btn-ghost btn-pequeno", type: "button", style: "margin-top: var(--espaco-3);" }, "Resetar revisão deste cartão");
+    btnResetar.addEventListener("click", async () => {
+      if (!confirm("Tem certeza? Isso vai permitir revisar este cartão novamente agora.")) return;
+      try {
+        await api.post(`/api/flashcards/${enc(carta.id)}/reset-review`);
+        toast("Revisão resetada. O cartão voltará para a fila.", { tipo: "sucesso" });
+        // Recarregar a fila de devidos
+        const { cards } = await api.get(`${base}/flashcards/due?limit=${TAMANHO_FILA}`);
+        fila.length = 0;
+        fila.push(...cards);
+        desenharRevisao();
+        void atualizarClasses?.();
+      } catch (erro) {
+        toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
+      }
+    });
+    notas.appendChild(btnResetar);
 
     const cartaoFrente = h("div", { class: "cartao-frente" },
       carta.noteTitle ? h("span", { class: "pilula pilula-destaque" }, carta.noteTitle) : null,
       h("span", { class: "cartao-rotulo" }, "Pergunta"),
-      h("h2", { class: "cartao-pergunta" }, carta.question),
-      mostrar);
+      h("h2", { class: "cartao-pergunta" }, carta.question));
 
     const cartaoVerso = h("div", { class: "cartao-verso" },
       h("span", { class: "cartao-rotulo" }, "Resposta"),
       resposta,
       notas);
 
-    const cartaoInner = h("div", { class: "cartao-inner" }, cartaoFrente, cartaoVerso);
+    const cartaoInner = h("div", { class: "cartao-inner", tabindex: "0", role: "button", "aria-label": "Virar cartão para ver a resposta" }, cartaoFrente, cartaoVerso);
     const cartaoRevisao = h("div", { class: "cartao-revisao" }, cartaoInner);
 
     function revelar() {
+      if (revelada) return;
       revelada = true;
       cartaoRevisao.classList.add("virado");
-      mostrar.hidden = true;
       notas.hidden = false;
       notas.querySelector("[data-nota=bom]").focus();
     }
+
+    // Click/tap no cartão para virar
+    cartaoInner.addEventListener("click", revelar);
+    cartaoInner.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        revelar();
+      }
+    });
 
     area.replaceChildren(
       h("div", { class: "revisao-topo" },
@@ -107,8 +131,6 @@ export async function render({ api, params, toast, atualizarClasses, navegar }) 
       cartaoRevisao,
       notas);
     revelada = false;
-    area.dataset.revelar = "1";
-    area.revelar = revelar;
   }
 
   function reiniciarRevisao() {

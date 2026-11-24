@@ -12,6 +12,7 @@ import {
   getFlashcardClassId,
   getFlashcards,
   getWeeklyPerformance,
+  resetFlashcardReview,
   reviewFlashcard,
   updateFlashcard,
 } from "./service.js";
@@ -211,6 +212,28 @@ export function registerFlashcardRoutes(router, {
       await exigirMembro(request, pool, classId);
       rateLimiter.consume(clientAddress(request), auth.user.id);
       json(response, 200, await deleteFlashcard(pool, {
+        cardId: params.cardId,
+        classId,
+        userId: auth.user.id,
+      }));
+    },
+  );
+
+  router.add(
+    "POST",
+    "/api/flashcards/:cardId/reset-review",
+    async (request, response, params) => {
+      const auth = await requireLogin(request, pool);
+      if (!isUuid(params.cardId)) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      const classId = await getFlashcardClassId(pool, params.cardId);
+      if (!classId) {
+        throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
+      }
+      await exigirMembro(request, pool, classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      json(response, 200, await resetFlashcardReview(pool, {
         cardId: params.cardId,
         classId,
         userId: auth.user.id,

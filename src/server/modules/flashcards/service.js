@@ -7,6 +7,7 @@ import {
   getWeeklyPerformance as getWeeklyPerformanceRecord,
   listDueFlashcards,
   listFlashcards,
+  resetFlashcardReview as resetFlashcardReviewRecord,
   updateFlashcard as updateFlashcardRecord,
 } from "./repository.js";
 
@@ -64,6 +65,22 @@ export async function deleteFlashcard(pool, {
     throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o dono pode excluir este flashcard");
   }
   return { deleted: true };
+}
+
+export async function resetFlashcardReview(pool, {
+  cardId,
+  classId,
+  userId,
+}) {
+  const deleted = await resetFlashcardReviewRecord(pool, {
+    cardId,
+    classId,
+    userId,
+  });
+  if (!deleted) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "não foi possível resetar a revisão");
+  }
+  return { reset: true };
 }
 
 export async function reviewFlashcard(pool, values) {

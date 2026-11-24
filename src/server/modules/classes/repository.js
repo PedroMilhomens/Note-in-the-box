@@ -249,6 +249,49 @@ export async function updateClassRules(pool, {
   return result.rows[0] ? mapClass(result.rows[0]) : null;
 }
 
+export async function updateClass(pool, {
+  classId,
+  userId,
+  name,
+  professorName,
+}) {
+  const result = await pool.query(
+    `UPDATE classes c
+     SET name = $3, professor_name = $4
+     WHERE c.id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM class_members cm
+         WHERE cm.class_id = c.id
+           AND cm.user_id = $2
+           AND cm.role = 'owner'
+       )
+     RETURNING c.id, c.name, c.professor_name, c.rules, c.created_at`,
+    [classId, userId, name, professorName],
+  );
+  return result.rows[0] ? mapClass(result.rows[0]) : null;
+}
+
+export async function deleteClass(pool, {
+  classId,
+  userId,
+}) {
+  const result = await pool.query(
+    `DELETE FROM classes c
+     WHERE c.id = $1
+       AND EXISTS (
+         SELECT 1
+         FROM class_members cm
+         WHERE cm.class_id = c.id
+           AND cm.user_id = $2
+           AND cm.role = 'owner'
+       )
+     RETURNING c.id`,
+    [classId, userId],
+  );
+  return result.rowCount > 0;
+}
+
 function mapClass(row) {
   return {
     id: row.id,

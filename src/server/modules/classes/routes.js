@@ -5,11 +5,13 @@ import { RateLimiter } from "../../middleware/rate-limit.js";
 import { exigirMembro } from "./exigir-membro.js";
 import {
   createClass,
+  deleteClass,
   getClass,
   getClassInviteCode,
   getMyClasses,
   joinClass,
   regenerateClassInviteCode,
+  updateClass,
   updateClassRules,
 } from "./service.js";
 
@@ -169,6 +171,36 @@ export function registerClassRoutes(router, {
         rules,
       });
       json(response, 200, result);
+    },
+  );
+
+  router.add(
+    "PATCH",
+    "/api/classes/:classId",
+    async (request, response, params, context) => {
+      const auth = await exigirMembro(request, pool, params.classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      const { name, professorName } = parseClassInput(await context.readJson());
+      const result = await updateClass(pool, {
+        classId: params.classId,
+        userId: auth.user.id,
+        name,
+        professorName,
+      });
+      json(response, 200, result);
+    },
+  );
+
+  router.add(
+    "DELETE",
+    "/api/classes/:classId",
+    async (request, response, params) => {
+      const auth = await exigirMembro(request, pool, params.classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      json(response, 200, await deleteClass(pool, {
+        classId: params.classId,
+        userId: auth.user.id,
+      }));
     },
   );
 }

@@ -10,6 +10,7 @@ export const ROTAS = [
   { path: "/classes/:classId/forum", nome: "classe-forum", carregar: () => import("./views/forum.js") },
   { path: "/classes/:classId/cartoes", nome: "classe-cartoes", carregar: () => import("./views/classe-cartoes.js") },
   { path: "/classes/:classId/membros", nome: "classe-membros", carregar: () => import("./views/membros.js") },
+  { path: "/classes/:classId/configuracao", nome: "classe-configuracao", carregar: () => import("./views/classe-configuracao.js") },
   { path: "/cartoes", nome: "cartoes", carregar: () => import("./views/cartoes.js") },
   { path: "/foco", nome: "foco", carregar: () => import("./views/foco.js") },
   { path: "/conta", nome: "conta", carregar: () => import("./views/conta.js") },

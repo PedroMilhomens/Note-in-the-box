@@ -139,6 +139,24 @@ export async function deleteFlashcard(pool, {
   return result.rowCount > 0;
 }
 
+export async function resetFlashcardReview(pool, {
+  cardId,
+  classId,
+  userId,
+}) {
+  const result = await pool.query(
+    `DELETE FROM flashcard_reviews
+     WHERE card_id = $1
+       AND user_id = $2
+       AND EXISTS (
+         SELECT 1 FROM flashcards f
+         WHERE f.id = $1 AND f.class_id = $3
+       )`,
+    [cardId, userId, classId],
+  );
+  return result.rowCount > 0;
+}
+
 export async function createReview(pool, {
   cardId,
   classId,

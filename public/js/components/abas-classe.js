@@ -6,6 +6,7 @@ const ABAS = [
   { chave: "forum", rotulo: "Fórum", sufixo: "/forum" },
   { chave: "cartoes", rotulo: "Flashcards", sufixo: "/cartoes" },
   { chave: "membros", rotulo: "Membros", sufixo: "/membros" },
+  { chave: "configuracao", rotulo: "Configuração", sufixo: "/configuracao" },
 ];
 
 // Cabeçalho da classe (voltar, nome, dados) e navegação entre as abas da classe.

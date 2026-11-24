@@ -8,6 +8,8 @@ import {
   joinClass as joinClassRecord,
   listUserClasses,
   updateClassRules as updateClassRulesRecord,
+  updateClass as updateClassRecord,
+  deleteClass as deleteClassRecord,
 } from "./repository.js";
 
 export async function createClass(pool, { userId, name, professorName }) {
@@ -67,6 +69,22 @@ export async function updateClassRules(pool, { classId, userId, rules }) {
     throw new HttpError(403, "PERMISSAO_NEGADA", "permissão negada");
   }
   return { class: result };
+}
+
+export async function updateClass(pool, { classId, userId, name, professorName }) {
+  const result = await updateClassRecord(pool, { classId, userId, name, professorName });
+  if (!result) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o responsável pode editar a classe");
+  }
+  return { class: result };
+}
+
+export async function deleteClass(pool, { classId, userId }) {
+  const deleted = await deleteClassRecord(pool, { classId, userId });
+  if (!deleted) {
+    throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o responsável pode excluir a classe");
+  }
+  return { deleted: true };
 }
 
 function hashInviteCode(inviteCode) {
