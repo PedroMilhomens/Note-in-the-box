@@ -94,4 +94,10 @@ export async function render({ api, params, user, toast, navegar }) {
             h("dt", {}, "Criada em"),
             h("dd", {}, new Date(classe.createdAt).toLocaleDateString("pt-BR", { dateStyle: "long" })),
             h("dt", {}, "Responsável"),
-            h("dd", {}, user.name))))));
+            h("dd", {}, user.name)
+          )
+        )
+      )
+    )
+  );
+}

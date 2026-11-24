@@ -357,7 +357,7 @@ progress::-moz-progress-bar { background: var(--cor-texto); }
 .cartao-revisao { display: grid; justify-items: center; align-content: center; gap: var(--espaco-3); min-height: 22rem; padding: var(--espaco-5); text-align: center; background: var(--cor-superficie); border: 1px solid var(--cor-primaria); border-radius: var(--raio); }
 .cartao-rotulo { color: var(--cor-texto-suave); font-size: var(--texto-pequeno); letter-spacing: 0.08em; text-transform: uppercase; }
 .cartao-pergunta { margin: 0; font-size: var(--titulo-2); overflow-wrap: anywhere; }
-.cartao-resposta { margin: 0; padding: var(--espaco-3) var(--espaco-4); background: var(--cor-fundo); border-radius: var(--raio-pequeno); white-space: pre-wrap; overflow-wrap: anywhere; }
+
 .btn-claro { background: var(--cor-texto); color: var(--cor-fundo); border-color: var(--cor-texto); }
 .btn-claro:hover { background: #fff; }
 .revisao-notas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--espaco-3); }
