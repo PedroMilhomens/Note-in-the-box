@@ -292,6 +292,19 @@ export async function deleteClass(pool, {
   return result.rowCount > 0;
 }
 
+export async function leaveClass(pool, {
+  classId,
+  userId,
+}) {
+  const result = await pool.query(
+    `DELETE FROM class_members
+     WHERE class_id = $1 AND user_id = $2
+     RETURNING class_id, user_id`,
+    [classId, userId],
+  );
+  return result.rowCount > 0;
+}
+
 function mapClass(row) {
   return {
     id: row.id,

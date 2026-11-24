@@ -10,6 +10,7 @@ import {
   getClassInviteCode,
   getMyClasses,
   joinClass,
+  leaveClass,
   regenerateClassInviteCode,
   updateClass,
   updateClassRules,
@@ -198,6 +199,19 @@ export function registerClassRoutes(router, {
       const auth = await exigirMembro(request, pool, params.classId);
       rateLimiter.consume(clientAddress(request), auth.user.id);
       json(response, 200, await deleteClass(pool, {
+        classId: params.classId,
+        userId: auth.user.id,
+      }));
+    },
+  );
+
+  router.add(
+    "POST",
+    "/api/classes/:classId/leave",
+    async (request, response, params) => {
+      const auth = await exigirMembro(request, pool, params.classId);
+      rateLimiter.consume(clientAddress(request), auth.user.id);
+      json(response, 200, await leaveClass(pool, {
         classId: params.classId,
         userId: auth.user.id,
       }));

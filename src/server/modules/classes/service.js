@@ -6,6 +6,7 @@ import {
   getClassInviteCode as getClassInviteCodeRecord,
   regenerateClassInviteCode as regenerateClassInviteCodeRecord,
   joinClass as joinClassRecord,
+  leaveClass as leaveClassRecord,
   listUserClasses,
   updateClassRules as updateClassRulesRecord,
   updateClass as updateClassRecord,
@@ -85,6 +86,14 @@ export async function deleteClass(pool, { classId, userId }) {
     throw new HttpError(403, "PERMISSAO_NEGADA", "apenas o responsável pode excluir a classe");
   }
   return { deleted: true };
+}
+
+export async function leaveClass(pool, { classId, userId }) {
+  const left = await leaveClassRecord(pool, { classId, userId });
+  if (!left) {
+    throw new HttpError(404, "NAO_ENCONTRADO", "não é membro desta classe");
+  }
+  return { left: true };
 }
 
 function hashInviteCode(inviteCode) {

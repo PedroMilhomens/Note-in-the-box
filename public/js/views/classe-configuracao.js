@@ -21,10 +21,56 @@ export async function render({ api, params, user, toast, navegar }) {
 
   const classe = detalhes.class;
   const proprietario = detalhes.members.find((m) => m.id === user.id && m.role === "owner");
-  if (!proprietario) {
-    return h("section", {},
-      h("p", { class: "aviso aviso-erro", role: "alert" }, "Apenas o responsável pode acessar as configurações."),
-      h("a", { class: "btn", href: `/classes/${enc(classId)}` }, "Voltar para a classe"));
+  const isOwner = Boolean(proprietario);
+
+  // Se não for owner, mostrar apenas opção de sair da classe
+  if (!isOwner) {
+    const secaoSair = h("section", { class: "card secao-perigo" },
+      h("h2", {}, "Sair da classe"),
+      h("p", { class: "texto-suave" }, `Você vai sair de "${classe.name}". Suas anotações e flashcards desta classe serão mantidos, mas você não terá mais acesso ao conteúdo dos colegas.`),
+      h("button", { class: "btn btn-perigo", type: "button" }, "Sair da classe"));
+    const btnSair = secaoSair.querySelector("button");
+    btnSair?.addEventListener("click", () => {
+      abrirDialogo({
+        titulo: "Sair da classe",
+        descricao: [
+          h("p", { class: "texto-suave" }, `Tem certeza que deseja sair de <strong>${classe.name}</strong>?`),
+          h("p", { class: "texto-suave" }, "Você poderá entrar novamente depois usando o código de convite.")
+        ],
+        confirmar: "Sair",
+        perigo: true,
+        aoConfirmar: async () => {
+          btnSair.disabled = true;
+          try {
+            await api.post(`/api/classes/${enc(classId)}/leave`);
+            toast("Você saiu da classe.", { tipo: "sucesso" });
+            await navegar("/classes");
+          } catch (erro) {
+            toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
+          } finally {
+            btnSair.disabled = false;
+          }
+        },
+      });
+    });
+
+    return h("section", { class: "configuracao-pagina" },
+      cabecalhoClasse(classe, "configuracao", { alunos: detalhes.members.length }),
+      h("div", { class: "configuracao-grade" },
+        h("div", { class: "configuracao-principal" }, secaoSair),
+        h("aside", { class: "configuracao-lateral" },
+          h("section", { class: "card" },
+            h("h2", {}, "Informações"),
+            h("dl", { class: "info-lista" },
+              h("dt", {}, "Criada em"),
+              h("dd", {}, new Date(classe.createdAt).toLocaleDateString("pt-BR", { dateStyle: "long" })),
+              h("dt", {}, "Responsável"),
+              h("dd", {}, detalhes.members.find(m => m.role === "owner")?.name ?? "—")
+            )
+          )
+        )
+      )
+    );
   }
 
   const campoNome = h("input", { id: "cfg-nome", type: "text", maxlength: 100, value: classe.name });
