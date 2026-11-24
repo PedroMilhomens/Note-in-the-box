@@ -1,6 +1,7 @@
 import { mensagemDeErro } from "../auth-validation.js";
 import { cabecalhoClasse } from "../components/abas-classe.js";
 import { h } from "../components/dom.js";
+import { abrirDialogo } from "../components/nota/dialogo.js";
 
 export const titulo = "Configuração";
 
@@ -64,23 +65,32 @@ export async function render({ api, params, user, toast, navegar }) {
     h("p", { class: "texto-suave" }, "Esta ação é irreversível. Todas as anotações, flashcards, fórum e membros da classe serão removidos permanentemente."),
     h("button", { class: "btn btn-perigo", type: "button" }, "Excluir classe permanentemente"));
   const btnExcluir = secaoExcluir.querySelector("button");
-  btnExcluir?.addEventListener("click", async () => {
-    const confirmacao = prompt("Digite o nome da classe para confirmar a exclusão:");
-    if (confirmacao !== classe.name) {
-      toast("Nome incorreto. Exclusão cancelada.", { tipo: "erro" });
-      return;
-    }
-    if (!confirm("Tem certeza absoluta? Isso não pode ser desfeito.")) return;
-    btnExcluir.disabled = true;
-    try {
-      await api.delete(base);
-      toast("Classe excluída.", { tipo: "sucesso" });
-      await navegar("/classes");
-    } catch (erro) {
-      toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
-    } finally {
-      btnExcluir.disabled = false;
-    }
+  btnExcluir?.addEventListener("click", () => {
+    const inputConfirmacao = h("input", { type: "text", placeholder: "Digite o nome da classe", autocomplete: "off", required: true, maxLength: 100 });
+    abrirDialogo({
+      titulo: "Excluir classe permanentemente",
+      descricao: `Para confirmar, digite o nome exato da classe: <strong>${classe.name}</strong>`,
+      conteudo: [h("div", { class: "campo" }, h("label", { for: "dlg-confirmar-nome" }, "Nome da classe"), inputConfirmacao)],
+      confirmar: "Excluir",
+      perigo: true,
+      aoConfirmar: async () => {
+        const valor = inputConfirmacao.value.trim();
+        if (valor !== classe.name) {
+          throw new Error("Nome incorreto. Exclusão cancelada.");
+        }
+        btnExcluir.disabled = true;
+        try {
+          await api.delete(base);
+          toast("Classe excluída.", { tipo: "sucesso" });
+          await navegar("/classes");
+        } catch (erro) {
+          toast(mensagemDeErro(erro.codigo), { tipo: "erro" });
+        } finally {
+          btnExcluir.disabled = false;
+        }
+      },
+    });
+    inputConfirmacao.focus();
   });
 
   return h("section", { class: "configuracao-pagina" },
