@@ -2,7 +2,7 @@ export async function createClass(pool, {
   userId,
   name,
   professorName,
-  inviteCodeHash,
+  inviteCode,
 }) {
   const client = await pool.connect();
   try {
@@ -11,7 +11,7 @@ export async function createClass(pool, {
       `INSERT INTO classes (name, professor_name, invite_code, created_by)
        VALUES ($1, $2, $3, $4)
        RETURNING id, name, professor_name, rules, created_at`,
-      [name, professorName, inviteCodeHash, userId],
+      [name, professorName, inviteCode, userId],
     );
     const createdClass = classResult.rows[0];
     await client.query(
@@ -38,7 +38,7 @@ export async function createClass(pool, {
   }
 }
 
-export async function joinClass(pool, { userId, inviteCodeHash }) {
+export async function joinClass(pool, { userId, inviteCode }) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -47,7 +47,7 @@ export async function joinClass(pool, { userId, inviteCodeHash }) {
        FROM classes
        WHERE invite_code = $1
        FOR UPDATE`,
-      [inviteCodeHash],
+      [inviteCode],
     );
     const foundClass = classResult.rows[0];
     if (!foundClass) {

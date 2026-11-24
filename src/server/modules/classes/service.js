@@ -14,7 +14,7 @@ export async function createClass(pool, { userId, name, professorName }) {
     userId,
     name,
     professorName,
-    inviteCodeHash: hashInviteCode(inviteCode),
+    inviteCode,
   });
   return { ...result, inviteCode };
 }
@@ -22,7 +22,7 @@ export async function createClass(pool, { userId, name, professorName }) {
 export async function joinClass(pool, { userId, inviteCode }) {
   const result = await joinClassRecord(pool, {
     userId,
-    inviteCodeHash: hashInviteCode(inviteCode),
+    inviteCode,
   });
   if (!result) {
     throw new HttpError(404, "CONVITE_NAO_ENCONTRADO", "convite não encontrado");

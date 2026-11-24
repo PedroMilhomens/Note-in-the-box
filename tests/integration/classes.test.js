@@ -61,8 +61,8 @@ test("criar classe, convidar membro e criar uma branch por usuário", async (con
     "SELECT invite_code FROM classes WHERE id = $1",
     [createdBody.class.id],
   );
-  assert.notEqual(storedCode.rows[0].invite_code, createdBody.inviteCode);
-  assert.equal(storedCode.rows[0].invite_code.length, 64);
+  assert.equal(storedCode.rows[0].invite_code, createdBody.inviteCode);
+  assert.equal(storedCode.rows[0].invite_code.length, 43);
 
   const beforeJoin = await fetch(
     `${origin}/api/classes/${createdBody.class.id}`,
