@@ -85,6 +85,8 @@ function getPagination(request) {
 export function registerFlashcardRoutes(router, {
   pool,
   rateLimiter = new RateLimiter(),
+  // Limites mais generosos para revisão de flashcards (sessões de estudo podem ter 20-50 revisões)
+  reviewRateLimiter = new RateLimiter({ limit: 60, windowMs: 60_000 }),
 }) {
   if (!pool) throw new TypeError("Pool do banco é obrigatório para flashcards");
 
@@ -161,7 +163,7 @@ export function registerFlashcardRoutes(router, {
         throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
       }
       await exigirMembro(request, pool, classId);
-      rateLimiter.consume(clientAddress(request), auth.user.id);
+      reviewRateLimiter.consume(clientAddress(request), auth.user.id);
       const { rating } = parseFlashcardReviewInput(await context.readJson());
       json(response, 201, await reviewFlashcard(pool, {
         cardId: params.cardId,
@@ -232,7 +234,7 @@ export function registerFlashcardRoutes(router, {
         throw new HttpError(404, "NAO_ENCONTRADO", "não encontrado");
       }
       await exigirMembro(request, pool, classId);
-      rateLimiter.consume(clientAddress(request), auth.user.id);
+      reviewRateLimiter.consume(clientAddress(request), auth.user.id);
       json(response, 200, await resetFlashcardReview(pool, {
         cardId: params.cardId,
         classId,

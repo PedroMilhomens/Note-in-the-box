@@ -9,7 +9,7 @@ export function abrirDialogo({ titulo, descricao, conteudo = [], confirmar, peri
   const idTitulo = `dlg-${Math.random().toString(36).slice(2, 8)}`;
   const formulario = h("form", { class: "dialogo-form", method: "dialog" },
     h("h2", { id: idTitulo }, titulo),
-    descricao ? h("p", { class: "texto-suave" }, descricao) : null,
+    descricao ? (Array.isArray(descricao) ? descricao : [h("p", { class: "texto-suave" }, descricao)]) : null,
     ...conteudo,
     erro,
     h("div", { class: "dialogo-acoes" }, cancelar, ok));

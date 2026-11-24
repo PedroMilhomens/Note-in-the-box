@@ -69,7 +69,10 @@ export async function render({ api, params, user, toast, navegar }) {
     const inputConfirmacao = h("input", { type: "text", placeholder: "Digite o nome da classe", autocomplete: "off", required: true, maxLength: 100 });
     abrirDialogo({
       titulo: "Excluir classe permanentemente",
-      descricao: `Para confirmar, digite o nome exato da classe: <strong>${classe.name}</strong>`,
+      descricao: [
+        h("p", { class: "texto-suave" }, "Para confirmar, digite o nome exato da classe: "),
+        h("strong", {}, classe.name)
+      ],
       conteudo: [h("div", { class: "campo" }, h("label", { for: "dlg-confirmar-nome" }, "Nome da classe"), inputConfirmacao)],
       confirmar: "Excluir",
       perigo: true,
