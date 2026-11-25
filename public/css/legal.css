@@ -1,0 +1,42 @@
+/* Páginas jurídicas estáticas (Termos de Uso e Política de Privacidade). Depende de tokens.css e base.css. */
+.legal {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--espaco-5, 1.5rem) var(--espaco-4, 1rem) 4rem;
+}
+
+.legal h1 { margin-bottom: var(--espaco-2, 0.5rem); }
+
+.legal h2 {
+  margin-top: var(--espaco-5, 2rem);
+  padding-top: var(--espaco-3, 0.75rem);
+  border-top: 1px solid rgba(244, 244, 244, 0.16);
+}
+
+.legal ol,
+.legal ul { margin: 0 0 var(--espaco-3, 1rem); padding-left: 1.4rem; }
+.legal li { margin-bottom: 0.4rem; }
+
+.legal .meta {
+  color: #cfc6d6;
+  font-size: 0.9rem;
+}
+
+.legal .resumo,
+.legal .preencher {
+  margin: var(--espaco-4, 1rem) 0;
+  padding: var(--espaco-3, 1rem);
+  border-left: 4px solid #7e688c;
+  background: rgba(71, 26, 115, 0.35);
+  border-radius: 0 8px 8px 0;
+}
+
+.legal .preencher { border-left-color: #f4f4f4; }
+
+.legal nav ol { columns: 1; }
+
+@media (min-width: 700px) {
+  .legal nav ol { columns: 2; column-gap: 2rem; }
+}
+
+.legal .voltar { margin-top: var(--espaco-5, 2rem); }

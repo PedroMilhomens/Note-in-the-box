@@ -18,6 +18,7 @@ const SHELL_PATHS = [
   "/css/tokens.css",
   "/css/base.css",
   "/css/components.css",
+  "/css/legal.css",
   "/js/app.js",
   "/js/api.js",
   "/js/router-client.js",
